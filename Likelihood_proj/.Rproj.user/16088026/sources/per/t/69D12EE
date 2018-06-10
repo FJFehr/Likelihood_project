@@ -1,0 +1,22 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1528659246384.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "511461074",
+    "id" : "69D12EE",
+    "lastKnownWriteTime" : 1528660188,
+    "last_content_update" : 1528660188113,
+    "path" : "~/Thesis/likelihood_project/Likelihood_project/Likelihood_proj/likelihood.Rmd",
+    "project_path" : "likelihood.Rmd",
+    "properties" : {
+        "cursorPosition" : "59,50",
+        "scrollLine" : "52"
+    },
+    "relative_order" : 1,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_markdown"
+}
