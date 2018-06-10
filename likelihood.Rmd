@@ -1,0 +1,179 @@
+---
+# IMPORTANT: Change settings here, but DO NOT change the spacing. 
+# Remove comments and add values where applicable. 
+# The descriptions below should be self-explanatory
+
+title: "Theory of Statistics \n Likelihood Assigment"
+#subtitle: "This will appear as Right Header"
+
+documentclass: "elsarticle"
+
+# Comment: ----- Follow this pattern for up to 5 authors
+Author1: "Sean Soutar STRSEA001"  # First Author
+Ref1: "UCT Statistics Honours, Cape Town, South Africa" # First Author's Affiliation
+Email1: "sean.soutar\\@gmail.com" # First Author's Email address
+
+Author2: "Fabio Fehr FHRFAB001"
+Ref2: "UCT Statistics Honours, Cape Town, South Africa"
+Email2: "FHRFAB001\\@myuct.ac.za"
+CommonAffiliation_12: FALSE # If Author 1 and 2 have a common affiliation. Works with _13, _23, etc.
+
+#Author3: "John Doe"
+#Email3: "JohnSmith\\@gmail.com"
+
+#CorrespAuthor_1: TRUE  # If corresponding author is author 3, e.g., use CorrespAuthor_3: TRUE
+
+keywords: "Likelihood \\sep Overdispersion \\sep Soek" # Use \\sep to separate
+JELCodes: ""
+
+# Comment: ----- Manage headers and footers:
+#BottomLFooter: $Title$
+#BottomCFooter:
+#TopLHeader: \leftmark # Adds section name at topleft. Remove comment to add it.
+BottomRFooter: "\\footnotesize Page \\thepage\\" # Add a '#' before this line to remove footer.
+addtoprule: TRUE
+addfootrule: TRUE               # Use if footers added. Add '#' to remove line.
+
+# Setting page margins:
+margin: 2.3 # Sides
+bottom: 2 # bottom
+top: 2.5 # Top
+
+HardSet: TRUE # Hard-set the spacing of words in your document. This will stop LaTeX squashong text to fit on pages, e.g. This is done by hard-setting the spacing dimensions. Set to FALSE if you want LaTeX to optimize this for your paper. 
+bibliography: Tex/ref.bib       # Do not edit: Keep this naming convention and location.
+RemovePreprintSubmittedTo: TRUE  # Removes the 'preprint submitted to...' at bottom of titlepage
+Journal: "Journal of Finance"   # Journal that the paper will be submitting to, if RemovePreprintSubmittedTo is set to TRUE.
+toc: no                         # Add a table of contents
+numbersections: yes             # Should sections (and thus figures and tables) be numbered?
+fontsize: 11pt                  # Set fontsize
+linestretch: 1.2                # Set distance between lines.
+link-citations: TRUE            # This creates dynamic links to the papers in reference list.
+output:
+  pdf_document:
+    keep_tex: TRUE
+    template: Tex/TexDefault.txt
+    fig_width: 3.5 # Adjust default figure sizes. This can also be done in the chunks of the text.
+    fig_height: 3.5
+    include:
+      in_header: Tex/packages.txt # Reference file with extra packages
+abstract: |
+  This project will explore the Accidents dataset and try fit a Poisson, Negative Binomial, Mixture of 2 Poissons and zero inflated Poisson models to the data. The model with the strongest support will be chosen and discussed. Profile likelihoods and confidence intervals for the parameters will be found and displayed of the chosen model.
+---
+
+<!-- First: Set your default preferences for chunk options: -->
+
+<!-- If you want a chunk's code to be printed, set echo = TRUE. message = FALSE stops R printing ugly package loading details in your final paper too. I also suggest setting warning = FALSE and checking for warnings in R, else you might find ugly warnings in your paper. -->
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE, fig.width = 6, fig.height = 5, fig.pos="H", fig.pos = 'H')
+# Note: Include = FALSE implies the code is executed, but not printed in your pdf.
+# warning and message = FALSE implies ugly messages and warnings are removed from your pdf. These should be picked up when you execute the command chunks (code sections below) in your rmd, not printed in your paper!
+
+library(knitr)
+library(ggplot2)
+library(kableExtra)
+library(tidyverse)
+# 
+# devtools::install_version("rmarkdown", version = "1.8", repos = "http://cran.us.r-project.org")
+
+
+```
+
+#Introduction
+
+This assignment is an explorative report on a dataset containing accident counts. The aim of the report is to find and fit a model which accurately describes the accident dataset. This report will first explore the data then fit different adequate distributions and choose the most appropriate one. Once a model has been selected the profile likelihood and confidence intervals will be programmed and calculated from from first principles. The results will then be analysed critically and conclusions will be made and consider further considerations in the study.
+
+##Exploratory data analysis
+
+To better understand our data this report shall explore the following properties; Firstly we examine the type of data within the accidents dataset and discuss whether our data is discrete ordinal or continuous. After the symmetry of the data and bounds will be discussed. This leads the exploration to outliers and extreme values.
+
+```{r}
+dat <- read.csv("data/accidents.csv") %>% 
+  setNames(c("Index","Counts"))
+
+#first column is just an index, second is a  1632 observations
+
+#first visualise the data
+
+firstplot <- ggplot(dat, aes(dat$Counts)) +
+  geom_histogram(binwidth= .5,
+                 fill="blue",
+                 alpha = .4,
+                 position="dodge")+
+  labs(x="Accident counts", y="Frequency") +
+  labs(title="Histogram\n Accident counts") +
+  theme_classic()+
+  theme(plot.title = element_text(hjust=0.5))
+  
+
+firstbox <- ggplot(dat)+
+  geom_boxplot(aes(y= dat$Counts,x=1),
+               fill = "cornflowerblue", 
+               outlier.color ="firebrick")+
+  theme_classic() +
+  theme(plot.title = element_text(hjust=0.5))+
+  labs(title="Boxplot\n Accident counts") +
+  labs(x="Accident counts",y ="")+
+  coord_flip()
+
+gridExtra::grid.arrange(firstplot,firstbox)
+
+```
+
+### Data type
+The in our accident dataset we noticed that there are many observations that have zero accidents. This suggests that we should focus on distribution that are zero weighted. The accident counts are denoted as a frequency which intuitively is a discrete variable and can take on values greater than or equal
+to zero. Thus accident counts will be regarded is a discrete positive definite random variable on the interval $R \in \{0;+ \infty\}$
+
+### Symmerty
+This property is visually seen in the histogram and boxplot displaying the accident data. All count are greater than zero with the majority of count being below 20. The largest accident count being 70. This shows that the data is non symetrical and positively skewed.
+
+### Outliers
+From the boxplot it clear that many outliers exist. An observation is termed an extreme value or outlier if it falls more than 1.5 times the inner-quartile range above the upper quartile. The proportion of outliers within our data set amount to 15.26% this give us reason to believe that population is also heavily skewed to the right. As aforementioned there are observations more extreme than what is displayed, which further reinforces our observation.
+
+```{r}
+#five number summary of the data
+five_sum <- summary(dat)
+
+#percentage outliers - 3rd quartile is 9
+perc_outlier <- round(length(dat$Counts[dat$Counts > 1.5*9])/length(dat$Counts),4)*100
+```
+
+
+#Methods 
+
+##Model Formulation
+
+Since our data is discrete, asymmetric, positive definite, contains many positive outliers and zeros this would suggest distributions such as Poisson, Negative Binomial and mixture distributions such as 2 poisson and a zero inflated Poisson. 
+
+###Poisson 
+
+###Negative Binomial
+
+###Mixture of 2 poissons
+
+###Zero inflated Poisson
+
+-We can use optimisers but we must program the likelihoods ourselves
+
+##Model Selection
+
+-Illustrate how good the model is 
+
+-We need to reparameterize parameters so that they are unbounded
+
+##Profile Likelihood & Confidence Intervals
+
+-Plot likelihood surface (two parameters at a time if necessary, fixing the
+other parameters at their MLEs).
+
+-Must be program the profile likelihoods, CI's ourselves
+
+#Results 
+
+#Conclusion
+
+-What are the next steps and how can we improve the models
+
+<!-- Make title of bibliography here: -->
+<!-- \newpage -->
+# References  

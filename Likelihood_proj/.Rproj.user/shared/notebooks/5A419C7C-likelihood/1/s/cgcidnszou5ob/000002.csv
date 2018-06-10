@@ -1,0 +1,4 @@
+"0","five_sum <- summary(sat)
+"
+"2","Error in summary(sat) : object 'sat' not found
+"

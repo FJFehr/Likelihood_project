@@ -141,7 +141,7 @@
 
 \begin{frontmatter}  %
 
-\title{Text Classification on News Articles}
+\title{Theory of Statistics Likelihood Assigment}
 
 \author[Add1]{Sean Soutar STRSEA001}
 \ead{sean.soutar@gmail.com}
@@ -158,14 +158,11 @@
 
 \begin{abstract}
 \small{
-This proposal outlines a research objective to maximise mutliclass,
-single label document topic classification accuracy and computational
-efficiency. Text classification is an important area of research due to
-the dramatic increase in data generation within the last decade. This
-proposal provides a short overview of the current methodology used in
-text classification as well as some exploratory analysis on the News24
-article data which will be used in our project. Finally we propose a
-timeline for our project and a work allocation going forward.
+This project will explore the Accidents dataset and try fit a Poisson,
+Negative Binomial, Mixture of 2 Poissons and zero inflated Poisson
+models to the data. The model with the strongest support will be chosen
+and discussed. Profile likelihoods and confidence intervals for the
+parameters will be found and displayed of the chosen model.
 }
 \end{abstract}
 
@@ -173,8 +170,7 @@ timeline for our project and a work allocation going forward.
 
 \begin{keyword}
 \footnotesize{
-Text classification \sep machine learning \sep natural language
-processing \\ \vspace{0.3cm}
+Likelihood \sep Overdispersion \sep Soek \\ \vspace{0.3cm}
 \textit{JEL classification} 
 }
 \end{keyword}
@@ -203,6 +199,94 @@ processing \\ \vspace{0.3cm}
 
 
 
+
+\section{Introduction}\label{introduction}
+
+This assignment is an explorative report on a dataset containing
+accident counts. The aim of the report is to find and fit a model which
+accurately describes the accident dataset. This report will first
+explore the data then fit different adequate distributions and choose
+the most appropriate one. Once a model has been selected the profile
+likelihood and confidence intervals will be programmed and calculated
+from from first principles. The results will then be analysed critically
+and conclusions will be made and consider further considerations in the
+study.
+
+\subsection{Exploratory data analysis}\label{exploratory-data-analysis}
+
+To better understand our data this report shall explore the following
+properties; Firstly we examine the type of data within the accidents
+dataset and discuss whether our data is discrete ordinal or continuous.
+After the symmetry of the data and bounds will be discussed. This leads
+the exploration to outliers and extreme values.
+
+\includegraphics{likelihood_files/figure-latex/unnamed-chunk-1-1.pdf}
+
+\subsubsection{Data type}\label{data-type}
+
+The in our accident dataset we noticed that there are many observations
+that have zero accidents. This suggests that we should focus on
+distribution that are zero weighted. The accident counts are denoted as
+a frequency which intuitively is a discrete variable and can take on
+values greater than or equal to zero. Thus accident counts will be
+regarded is a discrete positive definite random variable on the interval
+\(R \in \{0;+ \infty\}\)
+
+\subsubsection{Symmerty}\label{symmerty}
+
+This property is visually seen in the histogram and boxplot displaying
+the accident data. All count are greater than zero with the majority of
+count being below 20. The largest accident count being 70. This shows
+that the data is non symetrical and positively skewed.
+
+\subsubsection{Outliers}\label{outliers}
+
+From the boxplot it clear that many outliers exist. An observation is
+termed an extreme value or outlier if it falls more than 1.5 times the
+inner-quartile range above the upper quartile. The proportion of
+outliers within our data set amount to 15.26\% this give us reason to
+believe that population is also heavily skewed to the right. As
+aforementioned there are observations more extreme than what is
+displayed, which further reinforces our observation.
+
+\section{Methods}\label{methods}
+
+\subsection{Model Formulation}\label{model-formulation}
+
+Since our data is discrete, asymmetric, positive definite, contains many
+positive outliers and zeros this would suggest distributions such as
+Poisson, Negative Binomial and mixture distributions such as 2 poisson
+and a zero inflated Poisson.
+
+\subsubsection{Poisson}\label{poisson}
+
+\subsubsection{Negative Binomial}\label{negative-binomial}
+
+\subsubsection{Mixture of 2 poissons}\label{mixture-of-2-poissons}
+
+\subsubsection{Zero inflated Poisson}\label{zero-inflated-poisson}
+
+-We can use optimisers but we must program the likelihoods ourselves
+
+\subsection{Model Selection}\label{model-selection}
+
+-Illustrate how good the model is
+
+-We need to reparameterize parameters so that they are unbounded
+
+\subsection{Profile Likelihood \& Confidence
+Intervals}\label{profile-likelihood-confidence-intervals}
+
+-Plot likelihood surface (two parameters at a time if necessary, fixing
+the other parameters at their MLEs).
+
+-Must be program the profile likelihoods, CI's ourselves
+
+\section{Results}\label{results}
+
+\section{Conclusion}\label{conclusion}
+
+-What are the next steps and how can we improve the models
 
 \section{References}\label{references}
 
