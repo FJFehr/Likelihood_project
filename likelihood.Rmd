@@ -113,7 +113,7 @@ firstbox <- ggplot(dat)+
   theme_classic() +
   theme(plot.title = element_text(hjust=0.5))+
   labs(title="Boxplot\n Accident counts") +
-  labs(x="Accident counts",y ="")+
+  labs(y="Accident counts",x ="")+
   coord_flip()
 
 gridExtra::grid.arrange(firstplot,firstbox)
@@ -147,16 +147,62 @@ Since our data is discrete, asymmetric, positive definite, contains many positiv
 
 ###Poisson 
 
+\begin{align*} 
+f(x) & = e^{-\lambda} \frac{\lambda^x}{x!},\ \ x\in \{0,1,\ldots,\infty\},\lambda>0 \\
+\\
+L(\lambda|x) & = \prod_{i=1}^n f(x_i) \\
+\\
+L(\lambda|x) & =e^{-n\lambda}\dfrac{\lambda^{\sum_{i=1}^n x_i}}{\prod_{i=1}^n x_i!}\\
+\\
+l(\lambda|x) & =-n\lambda +  \left(\sum_{i=1}^n x_i\right)\ln \lambda + \ln(\prod_{i=1}^n x_i!).
+\end{align*}
+
+-define all parameters
+-fit to the data
+
 ###Negative Binomial
+
+
+\begin{align*}
+f(x) & = \left( \begin{array}{c}
+x+j-1  \\
+x  \end{array} \right)(1-\pi)^x\pi^j,\ \ x,\in \{0,1,\ldots,\infty\}, 0 \leq \pi \leq 1\\
+\\
+L(\lambda|x) & = \prod_{i=1}^n f(x_i) \\
+\\
+L(\lambda|x) & = \prod_{i=1}^n \left( \begin{array}{c}
+x_i+j-1  \\
+x_i  \end{array} \right)(1-\pi)^{\sum_{i=1}^n x_i}\pi^{nj}\\
+\\
+l(\lambda|x) & = \sum_{i=1}^n \ln \left( \begin{array}{c}
+x_i+j-1  \\
+x_i  \end{array} \right)+{\sum_{i=1}^n x_i} \ln (1-\pi) + {nj} \ln(\pi)
+\end{align*}
+
+-define all parameters
+-fit to the data
 
 ###Mixture of 2 poissons
 
+-Likelihood 
+-define all parameters
+-loglikelihood
+
+-fit to the data
+
+-Here I am assuming the mixture will be poisson with rate = sample mean and the other poisson will have a rate of 0.1 to take into account the zero inflation ? 
+
 ###Zero inflated Poisson
 
+-Likelihood 
+-loglikelihood
+-define all parameters
+-fit to the data
 -We can use optimisers but we must program the likelihoods ourselves
 
 ##Model Selection
 
+-compare models and choose the best one
 -Illustrate how good the model is 
 
 -We need to reparameterize parameters so that they are unbounded

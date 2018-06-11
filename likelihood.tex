@@ -260,17 +260,57 @@ and a zero inflated Poisson.
 
 \subsubsection{Poisson}\label{poisson}
 
+\begin{align*} 
+f(x) & = e^{-\lambda} \frac{\lambda^x}{x!},\ \ x\in \{0,1,\ldots,\infty\},\lambda>0 \\
+\\
+L(\lambda|x) & = \prod_{i=1}^n f(x_i) \\
+\\
+L(\lambda|x) & =e^{-n\lambda}\dfrac{\lambda^{\sum_{i=1}^n x_i}}{\prod_{i=1}^n x_i!}\\
+\\
+l(\lambda|x) & =-n\lambda +  \left(\sum_{i=1}^n x_i\right)\ln \lambda + \ln(\prod_{i=1}^n x_i!).
+\end{align*}
+
+-define all parameters -fit to the data
+
 \subsubsection{Negative Binomial}\label{negative-binomial}
+
+\begin{align*}
+f(x) & = \left( \begin{array}{c}
+x+j-1  \\
+x  \end{array} \right)(1-\pi)^x\pi^j,\ \ x,\in \{0,1,\ldots,\infty\}, 0 \leq \pi \leq 1\\
+\\
+L(\lambda|x) & = \prod_{i=1}^n f(x_i) \\
+\\
+L(\lambda|x) & = \prod_{i=1}^n \left( \begin{array}{c}
+x_i+j-1  \\
+x_i  \end{array} \right)(1-\pi)^{\sum_{i=1}^n x_i}\pi^{nj}\\
+\\
+l(\lambda|x) & = \sum_{i=1}^n \ln \left( \begin{array}{c}
+x_i+j-1  \\
+x_i  \end{array} \right)+{\sum_{i=1}^n x_i} \ln (1-\pi) + {nj} \ln(\pi)
+\end{align*}
+
+-define all parameters -fit to the data
 
 \subsubsection{Mixture of 2 poissons}\label{mixture-of-2-poissons}
 
+-Likelihood -define all parameters -loglikelihood
+
+-fit to the data
+
+-Here I am assuming the mixture will be poisson with rate = sample mean
+and the other poisson will have a rate of 0.1 to take into account the
+zero inflation ?
+
 \subsubsection{Zero inflated Poisson}\label{zero-inflated-poisson}
 
--We can use optimisers but we must program the likelihoods ourselves
+-Likelihood -loglikelihood -define all parameters -fit to the data -We
+can use optimisers but we must program the likelihoods ourselves
 
 \subsection{Model Selection}\label{model-selection}
 
--Illustrate how good the model is
+-compare models and choose the best one -Illustrate how good the model
+is
 
 -We need to reparameterize parameters so that they are unbounded
 
