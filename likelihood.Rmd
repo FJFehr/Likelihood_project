@@ -73,8 +73,16 @@ library(knitr)
 library(ggplot2)
 library(kableExtra)
 library(tidyverse)
+library(cowplot)
 # 
 # devtools::install_version("rmarkdown", version = "1.8", repos = "http://cran.us.r-project.org")
+
+
+dat <- read.csv("data/accidents.csv") %>% 
+  setNames(c("Index","Counts")) %>% 
+  as_data_frame() %>% 
+  mutate(Counts = as.numeric(Counts))
+
 
 
 ```
@@ -87,24 +95,20 @@ This assignment is an explorative report on a dataset containing accident counts
 
 To better understand our data this report shall explore the following properties; Firstly we examine the type of data within the accidents dataset and discuss whether our data is discrete ordinal or continuous. After the symmetry of the data and bounds will be discussed. This leads the exploration to outliers and extreme values.
 
-```{r}
-dat <- read.csv("data/accidents.csv") %>% 
-  setNames(c("Index","Counts"))
+```{r fig.height = 6}
 
 #first column is just an index, second is a  1632 observations
 
 #first visualise the data
 
-firstplot <- ggplot(dat, aes(dat$Counts)) +
-  geom_histogram(binwidth= .5,
-                 fill="blue",
+
+  distribution_plot <- ggplot(dat, aes(Counts)) +
+  stat_count( fill="blue",
                  alpha = .4,
                  position="dodge")+
-  labs(x="Accident counts", y="Frequency") +
-  labs(title="Histogram\n Accident counts") +
-  theme_classic()+
+  labs(x="Accident counts", y="Frequency" , title="Histogram\n Accident counts") +
+  theme_classic() +
   theme(plot.title = element_text(hjust=0.5))
-  
 
 firstbox <- ggplot(dat)+
   geom_boxplot(aes(y= dat$Counts,x=1),
@@ -116,15 +120,17 @@ firstbox <- ggplot(dat)+
   labs(y="Accident counts",x ="")+
   coord_flip()
 
-gridExtra::grid.arrange(firstplot,firstbox)
+plot_grid(distribution_plot,firstbox,ncol = 1)
+
+percentage_zero <- ((sum(dat$Counts==0)/nrow(dat))*100) %>% round(digits = 2)
 
 ```
 
 ### Data type
-The in our accident dataset we noticed that there are many observations that have zero accidents. This suggests that we should focus on distribution that are zero weighted. The accident counts are denoted as a frequency which intuitively is a discrete variable and can take on values greater than or equal
+There are many instances where zero accidents were observed. This accounts for approximately `r percentage_zero`% of the data. This suggests that the zero-inflated Poisson should be considered as this proportion is much higher than what would be expected of a regular Poisson distribution. The accident counts are denoted as a frequency which intuitively is a discrete variable and can take on values greater than or equal
 to zero. Thus accident counts will be regarded is a discrete positive definite random variable on the interval $R \in \{0;+ \infty\}$
 
-### Symmerty
+### Symmetry
 This property is visually seen in the histogram and boxplot displaying the accident data. All count are greater than zero with the majority of count being below 20. The largest accident count being 70. This shows that the data is non symetrical and positively skewed.
 
 ### Outliers
