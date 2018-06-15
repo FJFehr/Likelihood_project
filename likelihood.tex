@@ -224,39 +224,54 @@ the exploration to outliers and extreme values.
 
 \subsubsection{Data type}\label{data-type}
 
-The in our accident dataset we noticed that there are many observations
-that have zero accidents. This suggests that we should focus on
-distribution that are zero weighted. The accident counts are denoted as
-a frequency which intuitively is a discrete variable and can take on
-values greater than or equal to zero. Thus accident counts will be
-regarded is a discrete positive definite random variable on the interval
-\(R \in \{0;+ \infty\}\)
+There are many instances where zero accidents were observed. This
+accounts for approximately 25.18\% of the data. This suggests that the
+zero-inflated Poisson should be considered as this proportion is much
+higher than what would be expected of a regular Poisson distribution.
+The accident counts are discrete random variables. Specifically, they
+are discrete positive definite random variables on the interval
+\(R \in \{0;+ \infty\}\). Summary statistics of the data are shown
+below.
 
-\subsubsection{Symmerty}\label{symmerty}
+\begin{longtable}[]{@{}rrr@{}}
+\toprule
+Mean & Variance & Median\tabularnewline
+\midrule
+\endhead
+6.917892 & 85.08584 & 4\tabularnewline
+\bottomrule
+\end{longtable}
 
-This property is visually seen in the histogram and boxplot displaying
-the accident data. All count are greater than zero with the majority of
-count being below 20. The largest accident count being 70. This shows
-that the data is non symetrical and positively skewed.
+In the Poisson distribution, the mean should equal the variance. The
+sample variance far exceeds the sample mean. This indicates
+overdispersion if the Poisson distribution were to be used. This is when
+the observations are more variable than what would be expected. This
+suggests that alternative count models and mixture distributions should
+be used.
+
+\subsubsection{Symmetry}\label{symmetry}
+
+This property is visually seen in the histogram and boxplot. All counts
+are greater than zero with a median value of 4 accidents. The largest
+accident observed is 70 accidents. THe histogram shows that the data are
+non-symetrical and positively skewed which is usually expected of count
+data.
 
 \subsubsection{Outliers}\label{outliers}
 
-From the boxplot it clear that many outliers exist. An observation is
-termed an extreme value or outlier if it falls more than 1.5 times the
-inner-quartile range above the upper quartile. The proportion of
-outliers within our data set amount to 15.26\% this give us reason to
-believe that population is also heavily skewed to the right. As
-aforementioned there are observations more extreme than what is
-displayed, which further reinforces our observation.
+From the boxplot it clear that many outliers exist. One common method of
+classifying a point as an extreme value or outlier is if it falls more
+than 1.5 times the inner-quartile range above the upper quartile. The
+proportion of outliers within our data set amount to 15.26\%.
 
 \section{Methods}\label{methods}
 
 \subsection{Model Formulation}\label{model-formulation}
 
-Since our data is discrete, asymmetric, positive definite, contains many
-positive outliers and zeros this would suggest distributions such as
-Poisson, Negative Binomial and mixture distributions such as 2 poisson
-and a zero inflated Poisson.
+THe data is discrete, asymmetric, positive definite, contains many
+positive outliers and many zeros. This would suggest distributions such
+as Poisson, Negative Binomial, mixture distribution of 2 Poissons and a
+zero inflated Poisson.
 
 \subsubsection{Poisson}\label{poisson}
 

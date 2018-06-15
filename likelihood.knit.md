@@ -64,28 +64,7 @@ abstract: |
 
 <!-- If you want a chunk's code to be printed, set echo = TRUE. message = FALSE stops R printing ugly package loading details in your final paper too. I also suggest setting warning = FALSE and checking for warnings in R, else you might find ugly warnings in your paper. -->
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE, fig.width = 6, fig.height = 5, fig.pos="H", fig.pos = 'H')
-# Note: Include = FALSE implies the code is executed, but not printed in your pdf.
-# warning and message = FALSE implies ugly messages and warnings are removed from your pdf. These should be picked up when you execute the command chunks (code sections below) in your rmd, not printed in your paper!
 
-library(knitr)
-library(ggplot2)
-library(kableExtra)
-library(tidyverse)
-library(cowplot)
-# 
-# devtools::install_version("rmarkdown", version = "1.8", repos = "http://cran.us.r-project.org")
-
-
-dat <- read.csv("data/accidents.csv") %>% 
-  setNames(c("Index","Counts")) %>% 
-  as_data_frame() %>% 
-  mutate(Counts = as.numeric(Counts))
-
-
-
-```
 
 #Introduction
 
@@ -95,46 +74,16 @@ This assignment is an explorative report on a dataset containing accident counts
 
 To better understand our data this report shall explore the following properties; Firstly we examine the type of data within the accidents dataset and discuss whether our data is discrete ordinal or continuous. After the symmetry of the data and bounds will be discussed. This leads the exploration to outliers and extreme values.
 
-```{r fig.height = 6}
-
-#first column is just an index, second is a  1632 observations
-
-#first visualise the data
-
-
-  distribution_plot <- ggplot(dat, aes(Counts)) +
-  stat_count( fill="blue",
-                 alpha = .4,
-                 position="dodge")+
-  labs(x="Accident counts", y="Frequency" , title="Histogram\n Accident counts") +
-  theme_classic() +
-  theme(plot.title = element_text(hjust=0.5))
-
-firstbox <- ggplot(dat)+
-  geom_boxplot(aes(y= dat$Counts,x=1),
-               fill = "cornflowerblue", 
-               outlier.color ="firebrick")+
-  theme_classic() +
-  theme(plot.title = element_text(hjust=0.5))+
-  labs(title="Boxplot\n Accident counts") +
-  labs(y="Accident counts",x ="")+
-  coord_flip()
-
-plot_grid(distribution_plot,firstbox,ncol = 1)
-
-percentage_zero <- ((sum(dat$Counts==0)/nrow(dat))*100) %>% round(digits = 2)
-
-```
+![](likelihood_files/figure-latex/unnamed-chunk-1-1.pdf)<!-- --> 
 
 ### Data type
-There are many instances where zero accidents were observed. This accounts for approximately `r percentage_zero`% of the data. This suggests that the zero-inflated Poisson should be considered as this proportion is much higher than what would be expected of a regular Poisson distribution. The accident counts are discrete random variables. Specifically, they are discrete positive definite random variables on the interval $R \in \{0;+ \infty\}$. 
+There are many instances where zero accidents were observed. This accounts for approximately 25.18% of the data. This suggests that the zero-inflated Poisson should be considered as this proportion is much higher than what would be expected of a regular Poisson distribution. The accident counts are discrete random variables. Specifically, they are discrete positive definite random variables on the interval $R \in \{0;+ \infty\}$. 
 Summary statistics of the data are shown below.
 
-```{r summary_stat , fig.cap = "Summary Statistics of accident data \\label{summary_stats}"}
 
-summarize(.data = dat, Mean= mean(Counts), Variance = var(Counts), Median = median(Counts)) %>% knitr::kable()
-
-```
+     Mean   Variance   Median
+---------  ---------  -------
+ 6.917892   85.08584        4
 
 In the Poisson distribution, the mean should equal the variance. The sample variance far exceeds the sample mean. This indicates overdispersion if the Poisson distribution were to be used. This is when the observations are more variable than what would be expected. This suggests that alternative count models and mixture distributions should be used. 
 
@@ -145,13 +94,7 @@ This property is visually seen in the histogram and boxplot. All counts are grea
 ### Outliers
 From the boxplot it clear that many outliers exist. One common method of classifying a point as an extreme value or outlier is if it falls more than 1.5 times the inner-quartile range above the upper quartile. The proportion of outliers within our data set amount to 15.26%.
 
-```{r}
-#five number summary of the data
-five_sum <- summary(dat)
 
-#percentage outliers - 3rd quartile is 9
-perc_outlier <- round(length(dat$Counts[dat$Counts > 1.5*9])/length(dat$Counts),4)*100
-```
 
 
 #Methods 
