@@ -83,7 +83,9 @@ dat <- read.csv("data/accidents.csv") %>%
   as_data_frame() %>% 
   mutate(Counts = as.numeric(Counts))
 
-
+#define usefule variables
+x <- dat$Counts
+n <- nrow(dat)
 
 ```
 
@@ -158,41 +160,123 @@ perc_outlier <- round(length(dat$Counts[dat$Counts > 1.5*9])/length(dat$Counts),
 
 ##Model Formulation
 
-THe data is discrete, asymmetric, positive definite, contains many positive outliers and many zeros. This would suggest distributions such as Poisson, Negative Binomial, mixture distribution of 2 Poissons and a zero inflated Poisson. 
+The data is discrete, asymmetric, positive definite, contains many positive outliers and many zeros. This would suggest distributions such as Poisson, Negative Binomial, mixture distribution of 2 Poissons and a zero inflated Poisson. 
+
+## Akiake Information Coefficient (AIC)
+should we look at biC?
+The AIC metric can be used to compare models from different families of distributions. They can be used to compare relative goodness of fit between models. A lower AIC value indicates a better fitting model.
+
+
+$\text{AIC} = -2l(\hat{\theta}) + 2\text{p} \\
+p = \text{Number of estimated parameters}$
+
 
 ###Poisson 
 
 \begin{align*} 
-f(x) & = e^{-\lambda} \frac{\lambda^x}{x!},\ \ x\in \{0,1,\ldots,\infty\},\lambda>0 \\
+p(x) & =  \frac{e^{-\lambda} \lambda^x}{x!},\ \ x\in \{0,1,\ldots,\infty\},\lambda>0 \\
 \\
-L(\lambda|x) & = \prod_{i=1}^n f(x_i) \\
+L(\lambda|x) & = \prod_{i=1}^n p(x_i) \\
 \\
-L(\lambda|x) & =e^{-n\lambda}\dfrac{\lambda^{\sum_{i=1}^n x_i}}{\prod_{i=1}^n x_i!}\\
+L(\lambda|x) & =\dfrac{e^{-n\lambda}\lambda^{\sum_{i=1}^n x_i}}{\prod_{i=1}^n x_i!}\\
 \\
-l(\lambda|x) & =-n\lambda +  \left(\sum_{i=1}^n x_i\right)\ln \lambda + \ln(\prod_{i=1}^n x_i!).
+l(\lambda|x) & =-n\lambda +  \left(\sum_{i=1}^n x_i\right)\ln \lambda - \sum_{i=1}^{n}\ln(x_i!)
 \end{align*}
 
--define all parameters
--fit to the data
+The Poisson is characterised by the $\lambda$ parameter which denotes the population average rate of event occurence. In this context it would be the average number of accidents per unit time frame.
+
+```{r poisson_fit}
+
+#we can use mle to fit this
+mle_lambda <- sum(x)/n
+
+loglik_poisson <- -n*mle_lambda + sum(x)*log(mle_lambda)  -sum(log(factorial(x)))
+
+aic_poisson <- -2*loglik_poisson + 2*(1)
+
+data_frame(`Lambda Estimate`= mle_lambda , AIC = aic_poisson) %>% knitr::kable()
+
+
+```
+
 
 ###Negative Binomial
 
+<!-- \begin{align*} -->
+<!-- f(x) & = \left( \begin{array}{c} -->
+<!-- x+j-1  \\ -->
+<!-- x  \end{array} \right)(1-\pi)^x\pi^j,\ \ x,\in \{0,1,\ldots,\infty\}, 0 \leq \pi \leq 1\\ -->
+<!-- \\ -->
+<!-- L(\lambda|x) & = \prod_{i=1}^n f(x_i) \\ -->
+<!-- \\ -->
+<!-- L(\lambda|x) & = \prod_{i=1}^n \left( \begin{array}{c} -->
+<!-- x_i+j-1  \\ -->
+<!-- x_i  \end{array} \right)(1-\pi)^{\sum_{i=1}^n x_i}\pi^{nj}\\ -->
+<!-- \\ -->
+<!-- l(\lambda|x) & = \sum_{i=1}^n \ln \left( \begin{array}{c} -->
+<!-- x_i+j-1  \\ -->
+<!-- x_i  \end{array} \right)+{\sum_{i=1}^n x_i} \ln (1-\pi) + {nj} \ln(\pi) -->
+<!-- \end{align*} -->
 
-\begin{align*}
-f(x) & = \left( \begin{array}{c}
-x+j-1  \\
-x  \end{array} \right)(1-\pi)^x\pi^j,\ \ x,\in \{0,1,\ldots,\infty\}, 0 \leq \pi \leq 1\\
+
+\begin{align*} 
+p(x) & =  {\frac {\Gamma (r+x)}{x!\,\Gamma (r)}}\left({\frac {m}{r+m}}\right)^{x}\left({\frac {r}{r+m}}\right)^{r}\quad {\text{for }}x=0,1,2,\dotsc \\
 \\
-L(\lambda|x) & = \prod_{i=1}^n f(x_i) \\
+L(m,r|x) & = \prod_{i=1}^n p(x_i) \\
 \\
-L(\lambda|x) & = \prod_{i=1}^n \left( \begin{array}{c}
-x_i+j-1  \\
-x_i  \end{array} \right)(1-\pi)^{\sum_{i=1}^n x_i}\pi^{nj}\\
+L(m,r|x) & ={[\frac{1}{\Gamma (r)}]}^{n} \prod_{i=1}^{n}{\frac{\Gamma (r+x_i)}{x_{i}!}} (\frac{m}{r + m})^{\Sigma_{i=1}^n x_i} (\frac{r}{r + m})^{nr}   \\
 \\
-l(\lambda|x) & = \sum_{i=1}^n \ln \left( \begin{array}{c}
-x_i+j-1  \\
-x_i  \end{array} \right)+{\sum_{i=1}^n x_i} \ln (1-\pi) + {nj} \ln(\pi)
+l(m,r|x) & = -n\ln[\Gamma (r)] + \sum^{n}_{i=1} \ln(\Gamma (r + x_i)) -\sum^{n}_{i=1}\ln x_i! + \sum^{n}_{i=1} x_{i} \ln (\frac{m}{r + m}) + nr \ln (\frac{r}{r + m})
 \end{align*}
+
+This parameterisation of the negative binomial is characterised by the mean parameter m and the shape parameter r.
+
+```{r negative_binomial_fit}
+
+#https://en.wikipedia.org/wiki/Negative_binomial_distribution#Gamma%E2%80%93Poisson_mixture
+#use optim to optimise for r and m
+#r is a shape parameter so it doesnt really affect the loglikelihood much
+# we want mean = variance i think... therefore you can solve for r = m^2 /(sample variance  - m)
+#This is done by looking at birgit's notes and seeing that variance = m + m^2/r
+
+calc_negbinom_loglik <- function(par){
+  m <- par[1]
+  r <- m^2 /(var(x)-m)
+  
+  loglik <- -n*log(gamma(r)) + sum(log(gamma(r+x))) - sum(log(factorial(x))) + sum(x) * log(m/(m+r)) + n*r*log(r/(r+m))
+  
+  return(loglik)
+  
+}
+
+
+#If we maximise loglikelihood, we will be minimising AIC
+
+mle_negbinom <-
+  optim(
+  par = 1,
+  fn = calc_negbinom_loglik ,
+  control = list(fnscale = -1),
+  lower = 3,
+  upper = 30 ,
+  method = "L-BFGS-B"
+  )
+
+m_estimate <- mle_negbinom$par[1]
+r_estimate <- m_estimate^2 /(var(x)-m_estimate)
+
+aic_negbinom <- -2*-mle_negbinom$value + 2*(1)
+
+
+data_frame(`M Mean Estimate`= m_estimate , `r Shape Estimate` = r_estimate, AIC = aic_negbinom) %>% knitr::kable()
+
+
+```
+
+
+
+
+
 
 -define all parameters
 -fit to the data

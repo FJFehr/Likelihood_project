@@ -268,42 +268,69 @@ proportion of outliers within our data set amount to 15.26\%.
 
 \subsection{Model Formulation}\label{model-formulation}
 
-THe data is discrete, asymmetric, positive definite, contains many
+The data is discrete, asymmetric, positive definite, contains many
 positive outliers and many zeros. This would suggest distributions such
 as Poisson, Negative Binomial, mixture distribution of 2 Poissons and a
 zero inflated Poisson.
 
+\subsection{Akiake Information Coefficient
+(AIC)}\label{akiake-information-coefficient-aic}
+
+should we look at biC? The AIC metric can be used to compare models from
+different families of distributions. They can be used to compare
+relative goodness of fit between models. A lower AIC value indicates a
+better fitting model.
+
+\(\text{AIC} = -2l(\hat{\theta}) + 2\text{p} \\ p = \text{Number of estimated parameters}\)
+
 \subsubsection{Poisson}\label{poisson}
 
 \begin{align*} 
-f(x) & = e^{-\lambda} \frac{\lambda^x}{x!},\ \ x\in \{0,1,\ldots,\infty\},\lambda>0 \\
+p(x) & =  \frac{e^{-\lambda} \lambda^x}{x!},\ \ x\in \{0,1,\ldots,\infty\},\lambda>0 \\
 \\
-L(\lambda|x) & = \prod_{i=1}^n f(x_i) \\
+L(\lambda|x) & = \prod_{i=1}^n p(x_i) \\
 \\
-L(\lambda|x) & =e^{-n\lambda}\dfrac{\lambda^{\sum_{i=1}^n x_i}}{\prod_{i=1}^n x_i!}\\
+L(\lambda|x) & =\dfrac{e^{-n\lambda}\lambda^{\sum_{i=1}^n x_i}}{\prod_{i=1}^n x_i!}\\
 \\
-l(\lambda|x) & =-n\lambda +  \left(\sum_{i=1}^n x_i\right)\ln \lambda + \ln(\prod_{i=1}^n x_i!).
+l(\lambda|x) & =-n\lambda +  \left(\sum_{i=1}^n x_i\right)\ln \lambda - \sum_{i=1}^{n}\ln(x_i!)
 \end{align*}
 
--define all parameters -fit to the data
+The Poisson is characterised by the \(\lambda\) parameter which denotes
+the population average rate of event occurence. In this context it would
+be the average number of accidents per unit time frame.
+
+\begin{longtable}[]{@{}rr@{}}
+\toprule
+Lambda Estimate & AIC\tabularnewline
+\midrule
+\endhead
+6.917892 & 20263.64\tabularnewline
+\bottomrule
+\end{longtable}
 
 \subsubsection{Negative Binomial}\label{negative-binomial}
 
-\begin{align*}
-f(x) & = \left( \begin{array}{c}
-x+j-1  \\
-x  \end{array} \right)(1-\pi)^x\pi^j,\ \ x,\in \{0,1,\ldots,\infty\}, 0 \leq \pi \leq 1\\
+\begin{align*} 
+p(x) & =  {\frac {\Gamma (r+x)}{x!\,\Gamma (r)}}\left({\frac {m}{r+m}}\right)^{x}\left({\frac {r}{r+m}}\right)^{r}\quad {\text{for }}x=0,1,2,\dotsc \\
 \\
-L(\lambda|x) & = \prod_{i=1}^n f(x_i) \\
+L(m,r|x) & = \prod_{i=1}^n p(x_i) \\
 \\
-L(\lambda|x) & = \prod_{i=1}^n \left( \begin{array}{c}
-x_i+j-1  \\
-x_i  \end{array} \right)(1-\pi)^{\sum_{i=1}^n x_i}\pi^{nj}\\
+L(m,r|x) & ={[\frac{1}{\Gamma (r)}]}^{n} \prod_{i=1}^{n}{\frac{\Gamma (r+x_i)}{x_{i}!}} (\frac{m}{r + m})^{\Sigma_{i=1}^n x_i} (\frac{r}{r + m})^{nr}   \\
 \\
-l(\lambda|x) & = \sum_{i=1}^n \ln \left( \begin{array}{c}
-x_i+j-1  \\
-x_i  \end{array} \right)+{\sum_{i=1}^n x_i} \ln (1-\pi) + {nj} \ln(\pi)
+l(m,r|x) & = -n\ln[\Gamma (r)] + \sum^{n}_{i=1} \ln(\Gamma (r + x_i)) -\sum^{n}_{i=1}\ln x_i! + \sum^{n}_{i=1} x_{i} \ln (\frac{m}{r + m}) + nr \ln (\frac{r}{r + m})
 \end{align*}
+
+This parameterisation of the negative binomial is characterised by the
+mean parameter m and the shape parameter r.
+
+\begin{longtable}[]{@{}rrr@{}}
+\toprule
+M Mean Estimate & r Shape Estimate & AIC\tabularnewline
+\midrule
+\endhead
+6.810803 & 0.592616 & -9620.917\tabularnewline
+\bottomrule
+\end{longtable}
 
 -define all parameters -fit to the data
 
