@@ -1,0 +1,1 @@
+"0","percentage_zero <- ((sum(dat$Counts==0)/nrow(dat))*100) %>% round(digits = 2)"

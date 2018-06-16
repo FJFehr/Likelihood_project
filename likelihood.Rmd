@@ -230,6 +230,15 @@ l(m,r|x) & = -n\ln[\Gamma (r)] + \sum^{n}_{i=1} \ln(\Gamma (r + x_i)) -\sum^{n}_
 \end{align*}
 
 This parameterisation of the negative binomial is characterised by the mean parameter m and the shape parameter r.
+It is important to note that the variance of a Negative Binomial under this parameterisationg is $m + \frac{m^2}{r}$. Shape parameters are often regarded as nuisance parameters and do not play a meaningful role in maximising likelihood. Therefore, since we desire no under or over dispersion, we can express the shape parameter as a function of the mean parameter to be esimated and the sample variance.
+
+CHECK THIS! LOOK AT PAPER CALLED ESTIMATING SHAPE. I HAVE HIGHLIGHTED SOME STUFF ON SECOND PAGE
+
+\begin{align*}
+Var(x) &= m + \frac{m^2}{r} \\
+r &= \frac{m^2}{Var(x) - m} \\
+\hat{r} &= \frac{\hat{m^2}}{S^2 - \hat{m}}
+\end{align*}
 
 ```{r negative_binomial_fit}
 
@@ -275,13 +284,22 @@ data_frame(`M Mean Estimate`= m_estimate , `r Shape Estimate` = r_estimate, AIC 
 
 
 
+###Mixture of 2 Poissons
+
+A finite mixture distributon of two Poisson variables will now be explored. A possibly reason for the overdispersion is that the data are from two separate Poisson distributions. Since it is not known from which distribution that any given data point is from, presuming that the two distribution mixture is appropriate, an additional mixing parameter $p$ needs to be estimated.
 
 
+\begin{align*} 
+p(x|\lambda_1,\lambda_2,p) & =  p\frac{e^{-\lambda_1} \lambda_1^x}{x!} + (1-p)\frac{e^{-\lambda_2} \lambda_2^x}{x!},\ \ x\in \{0,1,\ldots,\infty\},\lambda_1 , \lambda_2 , p >0 \\
+\\
+L(\lambda_1,\lambda_2,p|x) & = \prod_{i=1}^n p(x_i) \\
+\\
+L(\lambda_1,\lambda_2,p|x) & =  \prod_{i=1}^n p\frac{e^{-\lambda_1} \lambda_1^x_i}{x_i!} + (1-p)\frac{e^{-\lambda_2} \lambda_2^x_i}{x_i!} \\
+\\
+l(\lambda_1,\lambda_2,p|x) & =-n\lambda +  \left(\sum_{i=1}^n x_i\right)\ln \lambda - \sum_{i=1}^{n}\ln(x_i!)
+\end{align*}
 
--define all parameters
--fit to the data
 
-###Mixture of 2 poissons
 
 -Likelihood 
 -define all parameters
