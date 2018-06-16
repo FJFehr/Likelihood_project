@@ -128,7 +128,7 @@ percentage_zero <- ((sum(dat$Counts==0)/nrow(dat))*100) %>% round(digits = 2)
 
 ```
 
-### Data type
+### Data type \label{data_description}
 There are many instances where zero accidents were observed. This accounts for approximately `r percentage_zero`% of the data. This suggests that the zero-inflated Poisson should be considered as this proportion is much higher than what would be expected of a regular Poisson distribution. The accident counts are discrete random variables. Specifically, they are discrete positive definite random variables on the interval $R \in \{0;+ \infty\}$. 
 Summary statistics of the data are shown below.
 
@@ -294,22 +294,57 @@ p(x|\lambda_1,\lambda_2,p) & =  p\frac{e^{-\lambda_1} \lambda_1^x}{x!} + (1-p)\f
 \\
 L(\lambda_1,\lambda_2,p|x) & = \prod_{i=1}^n p(x_i) \\
 \\
-L(\lambda_1,\lambda_2,p|x) & =  \prod_{i=1}^n p\frac{e^{-\lambda_1} \lambda_1^x_i}{x_i!} + (1-p)\frac{e^{-\lambda_2} \lambda_2^x_i}{x_i!} \\
+L(\lambda_1,\lambda_2,p|x) & =  \prod_{i=1}^n p\frac{e^{-\lambda_1} \lambda_1^{x_i}}{x_i!} + (1-p)\frac{e^{-\lambda_2} \lambda_2^{x_i}}{x_i!} \\
 \\
-l(\lambda_1,\lambda_2,p|x) & =-n\lambda +  \left(\sum_{i=1}^n x_i\right)\ln \lambda - \sum_{i=1}^{n}\ln(x_i!)
+l(\lambda_1,\lambda_2,p|x) & \sum^n_{i=1} \ln [ p\frac{e^{-\lambda_1} \lambda_1^{x_i}}{x_i!} + (1-p)\frac{e^{-\lambda_2} \lambda_2^{x_i}}{x_i!} ]
 \end{align*}
 
+The parameters $\lambda_1$ and $\lambda_2$ refer to the average number of road accidents per road stretch for the first and second distribution respectively. The parameter p is the mixing parameter. This represents the probability that a given observation belongs to distribution 1. Therefore, the probability that an observation belongs to distribution 2 is the $1-p$ quantity.
+
+```{r poisson_mixture_fit}
 
 
--Likelihood 
--define all parameters
--loglikelihood
+calc_poissmix_loglik <- function(par){
+  lambda_1 <- par[1]
+  lambda_2 <- par[2]
+  p <- par[3]
+  
+  loglik <- sum(log(p * dpois(x = x, lambda = lambda_1) + (1-p)*dpois(x = x, lambda = lambda_2)))
+  
+  return(loglik)
+  
+}
 
--fit to the data
 
--Here I am assuming the mixture will be poisson with rate = sample mean and the other poisson will have a rate of 0.1 to take into account the zero inflation ? 
+#If we maximise loglikelihood, we will be minimising AIC
+
+mle_poismix <-
+  optim(
+  par = c(25,10,0.5), 
+  fn = calc_poissmix_loglik ,
+  control = list(fnscale = -1), #maximise 
+  lower = c(0.1,0.1,0),
+  upper = c(100,100,1) ,
+  method = "L-BFGS-B"
+  )
+
+lambda_1_estimate <- mle_poismix$par[1]
+lambda_2_estimate <- mle_poismix$par[2]
+p_estimate <- mle_poismix$par[3]
+
+aic_poismix <- -2*-mle_poismix$value + 2*(3)
+
+
+data_frame(`Lamda 1 estimate`= lambda_1_estimate , `Lambda 2 estimate` = lambda_2_estimate, `Mixing Parameter p` = p_estimate, AIC = aic_poismix) %>% knitr::kable()
+
+
+
+```
+
 
 ###Zero inflated Poisson
+
+The Zero Inflated Poisson is also a finite mixture distribution. This model supposes that the data can come from two distributions. The one is a Zero Process and the other is a Poisson process that can only take on non-zero values. This model is useful if there are many zeroes in the data. This was seen to be the case as discussed in \ref{data_description}.
 
 -Likelihood 
 -loglikelihood
@@ -320,7 +355,7 @@ l(\lambda_1,\lambda_2,p|x) & =-n\lambda +  \left(\sum_{i=1}^n x_i\right)\ln \lam
 ##Model Selection
 
 -compare models and choose the best one
--Illustrate how good the model is 
+-Illustrate how good the model is (goodness of fit perhaps? q-q? visual plot?)
 
 -We need to reparameterize parameters so that they are unbounded
 
