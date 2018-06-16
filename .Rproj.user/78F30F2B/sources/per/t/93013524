@@ -1,0 +1,29 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1529152572271.000,
+    "dirty" : false,
+    "encoding" : "",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "93013524",
+    "lastKnownWriteTime" : 0,
+    "last_content_update" : 1529152572271,
+    "path" : null,
+    "project_path" : null,
+    "properties" : {
+        "cacheKey" : "10FEBC50",
+        "caption" : "comparison_df",
+        "contentUrl" : "grid_resource/gridviewer.html?env=&obj=comparison_df&cache_key=10FEBC50",
+        "displayedObservations" : 56,
+        "environment" : "",
+        "object" : "comparison_df",
+        "preview" : 0,
+        "totalObservations" : 56,
+        "variables" : 3
+    },
+    "relative_order" : 3,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_dataframe"
+}

@@ -344,7 +344,7 @@ r &= \frac{m^2}{Var(x) - m} \\
 M Mean Estimate & r Shape Estimate & AIC\tabularnewline
 \midrule
 \endhead
-6.810803 & 0.592616 & -9620.917\tabularnewline
+6.810803 & 0.592616 & -9618.917\tabularnewline
 \bottomrule
 \end{longtable}
 
@@ -391,17 +391,68 @@ model supposes that the data can come from two distributions. The one is
 a Zero Process and the other is a Poisson process that can only take on
 non-zero values. This model is useful if there are many zeroes in the
 data. This was seen to be the case as discussed in
-\ref{data_description}.
+\ref{data_description}. The Zero Inflated Poisson is a piecewise defined
+distribution with different mass functions for predicting the
+probability that a given observation will be zero rather than non-zero.
 
--Likelihood -loglikelihood -define all parameters -fit to the data -We
-can use optimisers but we must program the likelihoods ourselves
+\begin{align*}
+p(x_{i}=0) &= \pi +(1-\pi )e^{{-\lambda }} \\
+\\
+p(x_{i} \neq 0)=(1-\pi ){\frac  {\lambda ^{{x_{i}}}e^{{-\lambda }}}{x_{i}!}},\qquad x_{i}\geq 1 \\
+\\
+L(\lambda,\pi|x) &= L(\lambda,\pi |x = 0)L(\lambda,\pi|x \neq 0)
+\end{align*}
+
+An indicator variable \(I\) is defined. \[ 
+I =\begin{cases} 
+      0 & x=0 \\
+      1 & x \neq 0
+   \end{cases}
+\]
+
+\begin{align*}
+L(\lambda,\pi|x) &= \prod^{n}_{i=1} p(x_{i}=0)^{1 - I}p(x_{i} \neq 0)^{I} \\
+\\
+L(\lambda,\pi|x) &= \prod^{n}_{i=1} [\pi +(1-\pi )e^{{-\lambda }}]^{1 - I}[(1-\pi ){\frac  {\lambda ^{{x_{i}}}e^{{-\lambda }}}{x_{i}!}}]^{I} \\
+\\
+l(\lambda,\pi|x) &= \sum^{n}_{i=1} \ln[(1-I)[\pi +(1-\pi )e^{{-\lambda }}] + I[(1-\pi ){\frac  {\lambda ^{{x_{i}}}e^{{-\lambda }}}{x_{i}!}}]]
+\end{align*}
+
+The parameter \(\lambda\) is the average rate of accidents per road
+stretch. The parameter \(\pi\) is the probability of extra zeroes in the
+data. MAYBE EXPLAIN THIS BETTER?
+
+\begin{longtable}[]{@{}rrr@{}}
+\toprule
+Lamda estimate & Pi estimate & AIC\tabularnewline
+\midrule
+\endhead
+9.245627 & 0.2517669 & -15548.16\tabularnewline
+\bottomrule
+\end{longtable}
 
 \subsection{Model Selection}\label{model-selection}
 
--compare models and choose the best one -Illustrate how good the model
-is (goodness of fit perhaps? q-q? visual plot?)
+The AIC results for each model are summarised below.
 
--We need to reparameterize parameters so that they are unbounded
+\begin{longtable}[]{@{}lr@{}}
+\toprule
+Model & AIC\tabularnewline
+\midrule
+\endhead
+Poisson & 20263.641\tabularnewline
+Negative Binomial & -9618.917\tabularnewline
+Poisson Mixture & -12063.122\tabularnewline
+Zero Inflated Poisson & -15548.157\tabularnewline
+\bottomrule
+\end{longtable}
+
+The Zero Inflated Poisson model has the lowest AIC at -15548.157 value.
+This implies that is the best fitting model when compared to the other
+three models. The goodness of the Zero Inflated Poisson fit will now be
+assessed further.
+
+\includegraphics{likelihood_files/figure-latex/best_model_fit-1.pdf}
 
 \subsection{Profile Likelihood \& Confidence
 Intervals}\label{profile-likelihood-confidence-intervals}

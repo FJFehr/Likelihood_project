@@ -24,7 +24,7 @@
 "0","  )"
 "0","m_estimate <- mle_negbinom$par[1]"
 "0","r_estimate <- m_estimate^2 /(var(x)-m_estimate)"
-"0","aic_negbinom <- -2*-mle_negbinom$value + 2*(1)"
+"0","aic_negbinom <- -2*-mle_negbinom$value + 2*(2)"
 "0","data_frame(`M Mean Estimate`= m_estimate , `r Shape Estimate` = r_estimate, AIC = aic_negbinom) %>% knitr::kable()"
 "1","
 
@@ -35,6 +35,6 @@
 "1","|---------------:|----------------:|---------:|"
 "1","
 "
-"1","|        6.810803|         0.592616| -9620.917|"
+"1","|        6.810803|         0.592616| -9618.917|"
 "1","
 "

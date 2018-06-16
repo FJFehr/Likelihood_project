@@ -74,6 +74,7 @@ library(ggplot2)
 library(kableExtra)
 library(tidyverse)
 library(cowplot)
+library(ZIM) #for generating observations
 # 
 # devtools::install_version("rmarkdown", version = "1.8", repos = "http://cran.us.r-project.org")
 
@@ -274,7 +275,7 @@ mle_negbinom <-
 m_estimate <- mle_negbinom$par[1]
 r_estimate <- m_estimate^2 /(var(x)-m_estimate)
 
-aic_negbinom <- -2*-mle_negbinom$value + 2*(1)
+aic_negbinom <- -2*-mle_negbinom$value + 2*(2)
 
 
 data_frame(`M Mean Estimate`= m_estimate , `r Shape Estimate` = r_estimate, AIC = aic_negbinom) %>% knitr::kable()
@@ -344,20 +345,158 @@ data_frame(`Lamda 1 estimate`= lambda_1_estimate , `Lambda 2 estimate` = lambda_
 
 ###Zero inflated Poisson
 
-The Zero Inflated Poisson is also a finite mixture distribution. This model supposes that the data can come from two distributions. The one is a Zero Process and the other is a Poisson process that can only take on non-zero values. This model is useful if there are many zeroes in the data. This was seen to be the case as discussed in \ref{data_description}.
+The Zero Inflated Poisson is also a finite mixture distribution. This model supposes that the data can come from two distributions. The one is a Zero Process and the other is a Poisson process that can only take on non-zero values. This model is useful if there are many zeroes in the data. This was seen to be the case as discussed in \ref{data_description}. The Zero Inflated Poisson is a piecewise defined distribution with different mass functions for predicting the probability that a given observation will be zero rather than non-zero.
 
--Likelihood 
--loglikelihood
--define all parameters
--fit to the data
--We can use optimisers but we must program the likelihoods ourselves
+\begin{align*}
+p(x_{i}=0) &= \pi +(1-\pi )e^{{-\lambda }} \\
+\\
+p(x_{i} \neq 0)=(1-\pi ){\frac  {\lambda ^{{x_{i}}}e^{{-\lambda }}}{x_{i}!}},\qquad x_{i}\geq 1 \\
+\\
+L(\lambda,\pi|x) &= L(\lambda,\pi |x = 0)L(\lambda,\pi|x \neq 0)
+\end{align*}
+
+An indicator variable $I$ is defined.
+\[ 
+I =\begin{cases} 
+      0 & x=0 \\
+      1 & x \neq 0
+   \end{cases}
+\]
+
+\begin{align*}
+L(\lambda,\pi|x) &= \prod^{n}_{i=1} p(x_{i}=0)^{1 - I}p(x_{i} \neq 0)^{I} \\
+\\
+L(\lambda,\pi|x) &= \prod^{n}_{i=1} [\pi +(1-\pi )e^{{-\lambda }}]^{1 - I}[(1-\pi ){\frac  {\lambda ^{{x_{i}}}e^{{-\lambda }}}{x_{i}!}}]^{I} \\
+\\
+l(\lambda,\pi|x) &= \sum^{n}_{i=1} \ln[(1-I)[\pi +(1-\pi )e^{{-\lambda }}] + I[(1-\pi ){\frac  {\lambda ^{{x_{i}}}e^{{-\lambda }}}{x_{i}!}}]]
+\end{align*}
+
+The parameter $\lambda$ is the average rate of accidents per road stretch. The parameter $\pi$ is the probability of extra zeroes in the data.
+MAYBE EXPLAIN THIS BETTER?
+
+```{r zero_inflated_fit}
+
+
+calc_zip_loglik <- function(par){
+  lambda <- par[1]
+  pi <- par[2]
+  
+  #this for loop is slightly inefficient but it allows us to see what is happening
+  loglik <- 0
+  
+  for(j in x){
+    
+    indicator <- as.numeric(j > 0) #assign value 1 if greater than 0
+    
+    loglik <- loglik + log( (1 - indicator)*(pi + (1-pi)*exp(-lambda)) + indicator*((1-pi) * dpois(x = j , lambda = lambda))   )
+  }
+
+  
+  return(loglik)
+  
+}
+
+
+#If we maximise loglikelihood, we will be minimising AIC
+
+mle_zip <-
+  optim(
+  par = c(10,0.2), 
+  fn = calc_zip_loglik ,
+  control = list(fnscale = -1), #maximise 
+  lower = c(0.1,0),
+  upper = c(100,0.99999) ,
+  method = "L-BFGS-B"
+  )
+
+lambda_zip_estimate <- mle_zip$par[1]
+pi_zip_estimate <- mle_zip$par[2]
+
+aic_zip <- -2*-mle_zip$value + 2*(2)
+
+data_frame(`Lamda estimate`= lambda_zip_estimate , `Pi estimate` = pi_zip_estimate,  AIC = aic_zip) %>% knitr::kable()
+
+
+```
+
+
+
+
 
 ##Model Selection
 
--compare models and choose the best one
--Illustrate how good the model is (goodness of fit perhaps? q-q? visual plot?)
+The AIC results for each model are summarised below.
 
--We need to reparameterize parameters so that they are unbounded
+```{r aic_summary}
+
+aics <- c(aic_poisson,aic_negbinom,aic_poismix,aic_zip)
+model <- c("Poisson","Negative Binomial","Poisson Mixture","Zero Inflated Poisson")
+
+
+data_frame(Model = model, AIC = aics) %>% knitr::kable()
+
+
+
+```
+
+
+The Zero Inflated Poisson model has the lowest AIC at -15548.157 value. This implies that is the best fitting model when compared to the other three models. The goodness of the Zero Inflated Poisson fit will now be assessed further.
+
+
+```{r best_model_fit}
+
+#overlay distributions
+
+#generate zip_predictions
+
+generate_zip_prob <- function(lambda,pi,x){
+  
+  if(x == 0){
+    return(pi + (1-pi)*exp(-lambda))
+  }else{
+    return((1-pi)*dpois(x=x,lambda=lambda))
+    
+  }
+  
+}
+
+probs <- numeric(81)
+for (i in 0:80){
+  probs[i+1] <- generate_zip_prob(lambda = lambda_zip_estimate ,pi = pi_zip_estimate , x=i)
+}
+
+#get expected frequencies
+
+expected_freq <- probs*n
+
+
+comparison_df <- table(dat$Counts) %>% 
+                 as_data_frame %>% 
+                 rename(accident_count = Var1,
+                        observed = n) %>% 
+                 mutate(expected = expected_freq[1:56],
+                        accident_count = as.numeric(accident_count)) %>%  #take only first 56 values
+                 gather(Type,`Frequency` ,c(observed,expected))
+
+ggplot(comparison_df, aes(x = accident_count , y = Frequency , fill = Type )) +
+  geom_bar( stat="identity",alpha = .8,
+          position="dodge") +
+  labs(x="Accident counts", y="Frequency" , title="Observed vs Expected Frequencies as per Zero Inflated Poisson") +
+  theme_classic() +
+  theme(plot.title = element_text(hjust=0.5))
+
+
+#qq plot
+
+
+
+
+```
+
+
+
+
+
 
 ##Profile Likelihood & Confidence Intervals
 
