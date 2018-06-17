@@ -73,7 +73,7 @@ library(knitr)
 library(ggplot2)
 library(kableExtra)
 library(tidyverse)
-library(cowplot)
+library(cowplot) #for plotting cows
 library(ZIM) #for generating observations
 library(fitdistrplus)
 # 
@@ -93,7 +93,7 @@ n <- nrow(dat)
 
 #Introduction
 
-This assignment is an explorative report on a dataset containing accident counts. The aim of the report is to find and fit a model which accurately describes the accident dataset. This report will first explore the data then fit different adequate distributions and choose the most appropriate one. Once a model has been selected the profile likelihood and confidence intervals will be programmed and calculated from from first principles. The results will then be analysed critically and conclusions will be made and consider further considerations in the study.
+This assignment is an explorative report on a dataset containing the number of accidents on two-lane (same direction) road segments in Cape Town over a five-year period. The segments differ in length between 0.2 and 7.2 km. The aim of the report is to find and fit a model which accurately describes the accident dataset. This report will first explore the data then fit different adequate distributions and choose the most appropriate one. Once a model has been selected the profile likelihood and confidence intervals will be programmed and calculated from from first principles. The results will then be analysed critically and conclusions will be made and consider further considerations in the study.
 
 ##Exploratory data analysis
 
@@ -136,7 +136,9 @@ Summary statistics of the data are shown below.
 
 ```{r summary_stat , fig.cap = "Summary Statistics of accident data \\label{summary_stats}"}
 
-summarize(.data = dat, Mean= mean(Counts), Variance = var(Counts), Median = median(Counts)) %>% knitr::kable()
+summarize(.data = dat, Mean= round(mean(Counts),4), Variance = round(var(Counts),4), Median = median(Counts)) %>% knitr::kable(caption = "Summary statisitics")
+
+
 
 ```
 
@@ -146,15 +148,19 @@ In the Poisson distribution, the mean should equal the variance. The sample vari
 ### Symmetry
 This property is visually seen in the histogram and boxplot. All counts are greater than zero with a median value of 4 accidents. The largest accident observed is 70 accidents. THe histogram shows that the data are non-symetrical and positively skewed which is usually expected of count data.
 
+```{r}
+#percentage outliers - 3rd quartile is 9
+perc_outlier <- round(length(dat$Counts[dat$Counts > 1.5*9])/length(dat$Counts),4)*100
+```
+
+
 ### Outliers
-From the boxplot it clear that many outliers exist. One common method of classifying a point as an extreme value or outlier is if it falls more than 1.5 times the inner-quartile range above the upper quartile. The proportion of outliers within our data set amount to 15.26%.
+From the boxplot it clear that many outliers exist. One common method of classifying a point as an extreme value or outlier is if it falls more than 1.5 times the inner-quartile range above the upper quartile. The proportion of outliers within our data set amount to `r perc_outlier`%.
 
 ```{r}
 #five number summary of the data
 five_sum <- summary(dat)
 
-#percentage outliers - 3rd quartile is 9
-perc_outlier <- round(length(dat$Counts[dat$Counts > 1.5*9])/length(dat$Counts),4)*100
 ```
 
 
@@ -165,13 +171,24 @@ perc_outlier <- round(length(dat$Counts[dat$Counts > 1.5*9])/length(dat$Counts),
 The data is discrete, asymmetric, positive definite, contains many positive outliers and many zeros. This would suggest distributions such as Poisson, Negative Binomial, mixture distribution of 2 Poissons and a zero inflated Poisson. 
 
 ## Akiake Information Coefficient (AIC)
-should we look at biC?
-The AIC metric can be used to compare models from different families of distributions. They can be used to compare relative goodness of fit between models. A lower AIC value indicates a better fitting model.
 
+The AIC metric can be used to compare models from different families of distributions. They can be used to compare relative goodness of fit between models. Overfitting the model with too many parameter is penalised by an increased AIC, thus a lower AIC value indicates a better fitting model.
 
-$\text{AIC} = -2l(\hat{\theta}) + 2\text{p} \\
-p = \text{Number of estimated parameters}$
+\begin{align*}
+\text{AIC} &= -2l(\hat{\theta}) + 2\text{p} \\
+p &= \text{Number of estimated parameters}
+\end{align*}
 
+## Bayesian Information Criterion (BIC)
+
+This metric, like AIC, also compares relative goodness of fit between models but penalises complex models when the sample size is large. BIC tends to produce simpler models than AIC.
+
+\begin{align*}
+\text{BIC} &= -2l(\hat{\theta}) + log(n) \\
+n &= \text{Number of observations}
+\end{align*}
+
+## Model Distributions
 
 ###Poisson 
 
@@ -190,14 +207,15 @@ The Poisson is characterised by the $\lambda$ parameter which denotes the popula
 ```{r poisson_fit}
 
 #we can use mle to fit this
-mle_lambda <- sum(x)/n
+mle_lambda <- round(sum(x)/n,4)
 
 loglik_poisson <- -n*mle_lambda + sum(x)*log(mle_lambda)  -sum(log(factorial(x)))
 
 aic_poisson <- -2*loglik_poisson + 2*(1)
 
-data_frame(`Lambda Estimate`= mle_lambda , AIC = aic_poisson) %>% knitr::kable()
+bic_poisson <- -2*loglik_poisson + log(n)
 
+data_frame(`$\\hat{\\lambda}$`= mle_lambda , AIC = aic_poisson, BIC = bic_poisson) %>% knitr::kable(caption = "Poisson MLE's & information metrics")
 
 ```
 
@@ -239,7 +257,7 @@ CHECK THIS! LOOK AT PAPER CALLED ESTIMATING SHAPE. I HAVE HIGHLIGHTED SOME STUFF
 \begin{align*}
 Var(x) &= m + \frac{m^2}{r} \\
 r &= \frac{m^2}{Var(x) - m} \\
-\hat{r} &= \frac{\hat{m^2}}{S^2 - \hat{m}}
+\hat{r} &= \frac{\hat{m}^2}{S^2 - \hat{m}}
 \end{align*}
 
 ```{r negative_binomial_fit}
@@ -273,14 +291,15 @@ mle_negbinom <-
   method = "L-BFGS-B"
   )
 
-m_estimate <- mle_negbinom$par[1]
-r_estimate <- m_estimate^2 /(var(x)-m_estimate)
+m_estimate <- round(mle_negbinom$par[1],4)
+r_estimate <- round(m_estimate^2 /(var(x)-m_estimate),4)
 
 aic_negbinom <- -2*mle_negbinom$value + 2*(2)
 
+bic_negbinom <- -2*mle_negbinom$value + log(n)
 
-data_frame(`M Mean Estimate`= m_estimate , `r Shape Estimate` = r_estimate, AIC = aic_negbinom) %>% knitr::kable()
 
+data_frame(`Mean $\\hat{m}$`= m_estimate , `Shape $\\hat{r}$` = r_estimate, AIC = aic_negbinom, BIC = bic_negbinom) %>% knitr::kable(caption = "Negative Binomial MLE's & information metrics")
 
 ```
 
@@ -330,14 +349,17 @@ mle_poismix <-
   method = "L-BFGS-B"
   )
 
-lambda_1_estimate <- mle_poismix$par[1]
-lambda_2_estimate <- mle_poismix$par[2]
-p_estimate <- mle_poismix$par[3]
+lambda_1_estimate <- round(mle_poismix$par[1],4)
+lambda_2_estimate <- round(mle_poismix$par[2],4)
+p_estimate <- round(mle_poismix$par[3],4)
 
 aic_poismix <- -2*mle_poismix$value + 2*(3)
 
+bic_poismix <- -2*mle_poismix$value + log(n)
 
-data_frame(`Lamda 1 estimate`= lambda_1_estimate , `Lambda 2 estimate` = lambda_2_estimate, `Mixing Parameter p` = p_estimate, AIC = aic_poismix) %>% knitr::kable()
+
+data_frame(`$\\hat{\\lambda_1}$`= lambda_1_estimate , `$\\hat{\\lambda_2}$` = lambda_2_estimate, `Proportion p` = p_estimate, AIC = aic_poismix, BIC = bic_poismix) %>% knitr::kable(caption = "Poisson-Poisson MLE's & information metrics")
+
 
 
 
@@ -351,7 +373,7 @@ The Zero Inflated Poisson is also a finite mixture distribution. This model supp
 \begin{align*}
 p(x_{i}=0) &= \pi +(1-\pi )e^{{-\lambda }} \\
 \\
-p(x_{i} \neq 0)=(1-\pi ){\frac  {\lambda ^{{x_{i}}}e^{{-\lambda }}}{x_{i}!}},\qquad x_{i}\geq 1 \\
+p(x_{i} \neq 0) &=(1-\pi ){\frac  {\lambda ^{{x_{i}}}e^{{-\lambda }}}{x_{i}!}},\qquad x_{i}\geq 1 \\
 \\
 L(\lambda,\pi|x) &= L(\lambda,\pi |x = 0)L(\lambda,\pi|x \neq 0)
 \end{align*}
@@ -410,38 +432,41 @@ mle_zip <-
   method = "L-BFGS-B"
   )
 
-lambda_zip_estimate <- mle_zip$par[1]
-pi_zip_estimate <- mle_zip$par[2]
+lambda_zip_estimate <- round(mle_zip$par[1],4)
+pi_zip_estimate <- round(mle_zip$par[2],4)
 
 aic_zip <- -2*mle_zip$value + 2*(2)
 
-data_frame(`Lamda estimate`= lambda_zip_estimate , `Pi estimate` = pi_zip_estimate,  AIC = aic_zip) %>% knitr::kable()
+bic_zip <- -2*mle_zip$value + log(n)
+
+data_frame(`$\\hat{\\lambda}$`= lambda_zip_estimate , `$\\hat{\\pi}$` = pi_zip_estimate,  AIC = aic_zip, BIC = bic_zip) %>% 
+  knitr::kable(caption = "Zero inflated Poisson MLE's & information metrics")
 
 
 ```
-
-
-
 
 
 ##Model Selection
 
-The AIC results for each model are summarised below.
+The AIC and BIC results for each model are summarised below.
 
 ```{r aic_summary}
 
 aics <- c(aic_poisson,aic_negbinom,aic_poismix,aic_zip)
+bics <- c(bic_poisson,bic_negbinom,bic_poismix,bic_zip)
 model <- c("Poisson","Negative Binomial","Poisson Mixture","Zero Inflated Poisson")
 
 
-data_frame(Model = model, AIC = aics) %>% knitr::kable()
-
-
+data_frame(Model = model, AIC = aics,BIC = bics) %>% 
+  knitr::kable(format = "latex", 
+               caption = "Models fitted to accident data",
+               booktabs = T) %>% 
+  row_spec(2, bold = T)
 
 ```
 
 
-The Negative Binomial has the lowest AIC value at `r round(aic_negbinom,2)`. This implies that is the best fitting model when compared to the other three models. The goodness of the Negative Binomial fit will now be assessed further.
+The Negative Binomial has the lowest AIC and BIC value at `r round(aic_negbinom,2)` and `r round(bic_negbinom,2)` respectively. This implies that the Negative Binomial is the best fitting model when compared to the others. The goodness of fit will now be assessed further.
 
 
 ```{r best_model_fit}
@@ -687,7 +712,11 @@ It can be seen that the profile likelihood for the M parameter is somewhat quadr
 
 #Results 
 
+<<<<<<< Updated upstream
 
+=======
+-Are parameter estimates correlated?
+>>>>>>> Stashed changes
 
 #Conclusion
 

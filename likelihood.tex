@@ -202,8 +202,10 @@ Likelihood \sep Overdispersion \sep Soek \\ \vspace{0.3cm}
 
 \section{Introduction}\label{introduction}
 
-This assignment is an explorative report on a dataset containing
-accident counts. The aim of the report is to find and fit a model which
+This assignment is an explorative report on a dataset containing the
+number of accidents on two-lane (same direction) road segments in Cape
+Town over a five-year period. The segments differ in length between 0.2
+and 7.2 km. The aim of the report is to find and fit a model which
 accurately describes the accident dataset. This report will first
 explore the data then fit different adequate distributions and choose
 the most appropriate one. Once a model has been selected the profile
@@ -235,11 +237,16 @@ are discrete positive definite random variables on the interval
 below.
 
 \begin{longtable}[]{@{}rrr@{}}
+\caption{Summary statisitics}\tabularnewline
+\toprule
+Mean & Variance & Median\tabularnewline
+\midrule
+\endfirsthead
 \toprule
 Mean & Variance & Median\tabularnewline
 \midrule
 \endhead
-6.917892 & 85.08584 & 4\tabularnewline
+6.9179 & 85.0858 & 4\tabularnewline
 \bottomrule
 \end{longtable}
 
@@ -277,12 +284,30 @@ zero inflated Poisson.
 \subsection{Akiake Information Coefficient
 (AIC)}\label{akiake-information-coefficient-aic}
 
-should we look at biC? The AIC metric can be used to compare models from
-different families of distributions. They can be used to compare
-relative goodness of fit between models. A lower AIC value indicates a
-better fitting model.
+The AIC metric can be used to compare models from different families of
+distributions. They can be used to compare relative goodness of fit
+between models. Overfitting the model with too many parameter is
+penalised by an increased AIC, thus a lower AIC value indicates a better
+fitting model.
 
-\(\text{AIC} = -2l(\hat{\theta}) + 2\text{p} \\ p = \text{Number of estimated parameters}\)
+\begin{align*}
+\text{AIC} &= -2l(\hat{\theta}) + 2\text{p} \\
+p &= \text{Number of estimated parameters}
+\end{align*}
+
+\subsection{Bayesian Information Criterion
+(BIC)}\label{bayesian-information-criterion-bic}
+
+This metric, like AIC, also compares relative goodness of fit between
+models but penalises complex models when the sample size is large. BIC
+tends to produce simpler models than AIC.
+
+\begin{align*}
+\text{BIC} &= -2l(\hat{\theta}) + log(n) \\
+n &= \text{Number of observations}
+\end{align*}
+
+\subsection{Model Distributions}\label{model-distributions}
 
 \subsubsection{Poisson}\label{poisson}
 
@@ -300,12 +325,17 @@ The Poisson is characterised by the \(\lambda\) parameter which denotes
 the population average rate of event occurence. In this context it would
 be the average number of accidents per unit time frame.
 
-\begin{longtable}[]{@{}rr@{}}
+\begin{longtable}[]{@{}rrr@{}}
+\caption{Poisson MLE's \& information metrics}\tabularnewline
 \toprule
-Lambda Estimate & AIC\tabularnewline
+\(\hat{\lambda}\) & AIC & BIC\tabularnewline
+\midrule
+\endfirsthead
+\toprule
+\(\hat{\lambda}\) & AIC & BIC\tabularnewline
 \midrule
 \endhead
-6.917892 & 20263.64\tabularnewline
+6.9179 & 20263.64 & 20269.04\tabularnewline
 \bottomrule
 \end{longtable}
 
@@ -336,15 +366,20 @@ SOME STUFF ON SECOND PAGE
 \begin{align*}
 Var(x) &= m + \frac{m^2}{r} \\
 r &= \frac{m^2}{Var(x) - m} \\
-\hat{r} &= \frac{\hat{m^2}}{S^2 - \hat{m}}
+\hat{r} &= \frac{\hat{m}^2}{S^2 - \hat{m}}
 \end{align*}
 
-\begin{longtable}[]{@{}llc@{}}
+\begin{longtable}[]{@{}rrrr@{}}
+\caption{Negative Binomial MLE's \& information metrics}\tabularnewline
 \toprule
-M Mean Estimate & r Shape Estimate & AIC\tabularnewline
+Mean \(\hat{m}\) & Shape \(\hat{r}\) & AIC & BIC\tabularnewline
+\midrule
+\endfirsthead
+\toprule
+Mean \(\hat{m}\) & Shape \(\hat{r}\) & AIC & BIC\tabularnewline
 \midrule
 \endhead
-6.810803 & 0.592616 & 9626.917\tabularnewline
+6.8108 & 0.5926 & 9626.917 & 9630.314\tabularnewline
 \bottomrule
 \end{longtable}
 
@@ -374,13 +409,19 @@ represents the probability that a given observation belongs to
 distribution 1. Therefore, the probability that an observation belongs
 to distribution 2 is the \(1-p\) quantity.
 
-\begin{longtable}[]{@{}rrrr@{}}
+\begin{longtable}[]{@{}rrrrr@{}}
+\caption{Poisson-Poisson MLE's \& information metrics}\tabularnewline
 \toprule
-Lamda 1 estimate & Lambda 2 estimate & Mixing Parameter p &
-AIC\tabularnewline
+\(\hat{\lambda_1}\) & \(\hat{\lambda_2}\) & Proportion p & AIC &
+BIC\tabularnewline
+\midrule
+\endfirsthead
+\toprule
+\(\hat{\lambda_1}\) & \(\hat{\lambda_2}\) & Proportion p & AIC &
+BIC\tabularnewline
 \midrule
 \endhead
-19.38094 & 2.84069 & 0.2465036 & 12075.12\tabularnewline
+19.3809 & 2.8407 & 0.2465 & 12075.12 & 12076.52\tabularnewline
 \bottomrule
 \end{longtable}
 
@@ -398,7 +439,7 @@ probability that a given observation will be zero rather than non-zero.
 \begin{align*}
 p(x_{i}=0) &= \pi +(1-\pi )e^{{-\lambda }} \\
 \\
-p(x_{i} \neq 0)=(1-\pi ){\frac  {\lambda ^{{x_{i}}}e^{{-\lambda }}}{x_{i}!}},\qquad x_{i}\geq 1 \\
+p(x_{i} \neq 0) &=(1-\pi ){\frac  {\lambda ^{{x_{i}}}e^{{-\lambda }}}{x_{i}!}},\qquad x_{i}\geq 1 \\
 \\
 L(\lambda,\pi|x) &= L(\lambda,\pi |x = 0)L(\lambda,\pi|x \neq 0)
 \end{align*}
@@ -422,30 +463,40 @@ The parameter \(\lambda\) is the average rate of accidents per road
 stretch. The parameter \(\pi\) is the probability of extra zeroes in the
 data. MAYBE EXPLAIN THIS BETTER?
 
-\begin{longtable}[]{@{}rrr@{}}
+\begin{longtable}[]{@{}rrrr@{}}
+\caption{Zero inflated Poisson MLE's \& information
+metrics}\tabularnewline
 \toprule
-Lamda estimate & Pi estimate & AIC\tabularnewline
+\(\hat{\lambda}\) & \(\hat{\pi}\) & AIC & BIC\tabularnewline
+\midrule
+\endfirsthead
+\toprule
+\(\hat{\lambda}\) & \(\hat{\pi}\) & AIC & BIC\tabularnewline
 \midrule
 \endhead
-9.245627 & 0.2517669 & 15556.16\tabularnewline
+9.2456 & 0.2518 & 15556.16 & 15559.56\tabularnewline
 \bottomrule
 \end{longtable}
 
 \subsection{Model Selection}\label{model-selection}
 
-The AIC results for each model are summarised below.
+The AIC and BIC results for each model are summarised below.
 
-\begin{longtable}[]{@{}lr@{}}
+\begin{table}
+
+\caption{\label{tab:aic_summary}Models fitted to accident data}
+\centering
+\begin{tabular}[t]{lrr}
 \toprule
-Model & AIC\tabularnewline
+Model & AIC & BIC\\
 \midrule
-\endhead
-Poisson & 20263.641\tabularnewline
-Negative Binomial & 9626.917\tabularnewline
-Poisson Mixture & 12075.122\tabularnewline
-Zero Inflated Poisson & 15556.157\tabularnewline
+Poisson & 20263.641 & 20269.039\\
+\textbf{Negative Binomial} & \textbf{9626.917} & \textbf{9630.314}\\
+Poisson Mixture & 12075.122 & 12076.520\\
+Zero Inflated Poisson & 15556.157 & 15559.555\\
 \bottomrule
-\end{longtable}
+\end{tabular}
+\end{table}
 
 The Negative Binomial has the lowest AIC value at 9626.92. This implies
 that is the best fitting model when compared to the other three models.
@@ -466,13 +517,34 @@ The goodness of the Negative Binomial fit will now be assessed further.
 \subsection{Profile Likelihood \& Confidence
 Intervals}\label{profile-likelihood-confidence-intervals}
 
-INSERT LATEX HERE
+The profile likelihood is a techinque used to estimate the likelihood
+function of a single parameter when multiple parameters are estimated
+simultaenously. The profile likelihoods for the m and r parameters are
+calculated as follows:
+
+\begin{align*}
+\end{align*}
 
 \includegraphics{likelihood_files/figure-latex/profile_likelihood_m-1.pdf}
 
 \includegraphics{likelihood_files/figure-latex/profile_likelihood_r-1.pdf}
 
+It can be seen that the profile likelihood for the M parameter is
+somewhat quadratic , but this is clearly not the case for the R shape
+parameter. Therefore it would be inappropriate to use a Wilks Likelihood
+interval or Wald interval for the shape parameter. The direct likelihood
+interval should be used. However, the quadracity of the M parameter
+profile likelihood means that asymptotic intervals relying on quadracity
+could be used.
+
 \section{Results}\label{results}
+
+\textless{}\textless{}\textless{}\textless{}\textless{}\textless{}\textless{}
+Updated upstream
+
+======= -Are parameter estimates correlated?
+\textgreater{}\textgreater{}\textgreater{}\textgreater{}\textgreater{}\textgreater{}\textgreater{}
+Stashed changes
 
 \section{Conclusion}\label{conclusion}
 

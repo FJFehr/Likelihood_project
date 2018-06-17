@@ -11,28 +11,12 @@ knitr::opts_chunk$set(echo = TRUE)
 
 
 
-\begin{align*} 
-f(x) & = e^{-\lambda} \frac{\lambda^x}{x!},\ \ x\in \{0,1,\ldots,\infty\},\lambda>0 \\
-\\
-L(\lambda|x) & = \prod_{i=1}^n f(x_i) \\
-\\
-L(\lambda|x) & =e^{-n\lambda}\dfrac{\lambda^{\sum_{i=1}^n x_i}}{\prod_{i=1}^n x_i!}\\
-\\
-l(\lambda|x) & =-n\lambda +  \left(\sum_{i=1}^n x_i\right)\ln \lambda + \ln(\prod_{i=1}^n x_i!).
+\begin{align*}
+\text{AIC} &= -2l(\hat{\theta}) + 2\text{p} \\
+p &= \text{Number of estimated parameters}
 \end{align*}
 
 \begin{align*}
-f(x) & = \left( \begin{array}{c}
-x+j-1  \\
-x  \end{array} \right)(1-\pi)^x\pi^j \\
-\\
-L(\lambda|x) & = \prod_{i=1}^n f(x_i) \\
-\\
-L(\lambda|x) & = \prod_{i=1}^n \left( \begin{array}{c}
-x_i+j-1  \\
-x_i  \end{array} \right)(1-\pi)^{\sum_{i=1}^n x_i}\pi^{nj}\\
-\\
-l(\lambda|x) & = \sum_{i=1}^n \ln \left( \begin{array}{c}
-x_i+j-1  \\
-x_i  \end{array} \right)+{\sum_{i=1}^n x_i} \ln (1-\pi) + {nj} \ln(\pi)
+\text{BIC} &= -2l(\hat{\theta}) + log(n) \\
+n &= \text{Number of observations}
 \end{align*}

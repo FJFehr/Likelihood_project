@@ -126,29 +126,13 @@ $(document).ready(function () {
 </div>
 
 
-<span class="math display">\[\begin{align*} 
-f(x) &amp; = e^{-\lambda} \frac{\lambda^x}{x!},\ \ x\in \{0,1,\ldots,\infty\},\lambda&gt;0 \\
-\\
-L(\lambda|x) &amp; = \prod_{i=1}^n f(x_i) \\
-\\
-L(\lambda|x) &amp; =e^{-n\lambda}\dfrac{\lambda^{\sum_{i=1}^n x_i}}{\prod_{i=1}^n x_i!}\\
-\\
-l(\lambda|x) &amp; =-n\lambda +  \left(\sum_{i=1}^n x_i\right)\ln \lambda + \ln(\prod_{i=1}^n x_i!).
+<span class="math display">\[\begin{align*}
+\text{AIC} &amp;= -2l(\hat{\theta}) + 2\text{p} \\
+p &amp;= \text{Number of estimated parameters}
 \end{align*}\]</span>
 <span class="math display">\[\begin{align*}
-f(x) &amp; = \left( \begin{array}{c}
-x+j-1  \\
-x  \end{array} \right)(1-\pi)^x\pi^j \\
-\\
-L(\lambda|x) &amp; = \prod_{i=1}^n f(x_i) \\
-\\
-L(\lambda|x) &amp; = \prod_{i=1}^n \left( \begin{array}{c}
-x_i+j-1  \\
-x_i  \end{array} \right)(1-\pi)^{\sum_{i=1}^n x_i}\pi^{nj}\\
-\\
-l(\lambda|x) &amp; = \sum_{i=1}^n \ln \left( \begin{array}{c}
-x_i+j-1  \\
-x_i  \end{array} \right)+{\sum_{i=1}^n x_i} \ln (1-\pi) + {nj} \ln(\pi)
+\text{BIC} &amp;= -2l(\hat{\theta}) + log(n) \\
+n &amp;= \text{Number of observations}
 \end{align*}\]</span>
 
 
