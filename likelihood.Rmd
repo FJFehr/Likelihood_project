@@ -527,7 +527,10 @@ chisq.test(filter(comparison_df,Type == "observed")$Frequency,filter(comparison_
 
 ##Profile Likelihood & Confidence Intervals
 
-INSERT LATEX HERE
+The profile likelihood is a techinque used to estimate the likelihood function of a single parameter when multiple parameters are estimated simultaenously. The profile likelihoods for the m and r parameters are calculated as follows:
+
+\begin{align*}
+\end{align*}
 
 ```{r profile_likelihood_m, fig.width= 5.5 , fig.height= 5.5}
 
@@ -683,6 +686,8 @@ It can be seen that the profile likelihood for the M parameter is somewhat quadr
 
 
 #Results 
+
+
 
 #Conclusion
 
