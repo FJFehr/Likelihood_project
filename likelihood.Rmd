@@ -529,10 +529,13 @@ chisq.test(filter(comparison_df,Type == "observed")$Frequency,filter(comparison_
 
 INSERT LATEX HERE
 
-```{r profile_likelihood}
+```{r profile_likelihood_m, fig.width= 5.5 , fig.height= 5.5}
 
 
 #need to calulcate mle at EACH point
+
+m_range <- seq(1,56, by = 0.1) #values of m for profile m loglikelihood
+r_range <- seq(0.01,0.8 , by = 0.01)
 
 
 calc_negbinom_loglik_profile <- function(r,m){
@@ -549,21 +552,21 @@ profile_likelihood_calc_mean <- function(){
   
   #Calculate profile for M by calculating mle for R at eacg value of M
   
-  estimated_r_s <- numeric(56)
+  estimated_r_s <- numeric(length(m_range))
   
-          for(m in 1:56){
+          for(i in seq_along(m_range)){
             
               mle_profile <- #find mle for r at each value of m
                           optim(
                           par = 1,
-                          m = m,
+                          m = m_range[i],
                           fn = calc_negbinom_loglik_profile ,
                           control = list(fnscale = -1),
                           lower = 0.1,
                           upper = 30 ,  # i presume shape cant take a ridiculous value like this
                           method = "L-BFGS-B"
           )
-          estimated_r_s[m] <- mle_profile$par
+          estimated_r_s[i] <- mle_profile$par
             
         }
           
@@ -575,17 +578,29 @@ estimated_r_values <- profile_likelihood_calc_mean()
 
 #For each r in estimated_r_values, sub in M from 1:56 and trace it 
 
-m_profile_loglik_values <- numeric(56)
+m_profile_loglik_values <- numeric(length(m_range))
 
 for (i in seq_along(estimated_r_values)){
   
-  m_profile_loglik_values[i] <- calc_negbinom_loglik_profile(r = estimated_r_values[i], m = i)
+  m_profile_loglik_values[i] <- calc_negbinom_loglik_profile(r = estimated_r_values[i], m = m_range[i])
   
   
 }
 
 
-plot(x = 1:56 , y = m_profile_loglik_values , type = "l", xlab = "M parameter value", ylab = "Profile Loglikelihood")
+data_frame(x = m_range, val = m_profile_loglik_values) %>% 
+    ggplot(aes(x=x,y=val))+
+    geom_point(size = 1) +
+   scale_x_continuous(breaks = seq(0,56,by=2)) +
+    geom_vline(xintercept = 6.9, col = "red", lty = "dashed") +
+    labs(x = "M parameter value", y = "Profile Loglikelihood" , title = "Profile Loglikelihood of M Parameter") +
+    theme_classic()
+
+
+
+#Now we do the profile loglikelihood for the r 
+
+
 
 
 
@@ -593,6 +608,78 @@ plot(x = 1:56 , y = m_profile_loglik_values , type = "l", xlab = "M parameter va
 
 
 ```
+
+
+```{r profile_likelihood_r}
+
+
+#have to redfine function to allow for correct optimisation
+
+calc_negbinom_loglik_profile <- function(m,r){
+  
+  loglik <- -n*log(gamma(r)) + sum(log(gamma(r+x))) - sum(log(factorial(x))) + sum(x) * log(m/(m+r)) + n*r*log(r/(r+m))
+  
+  return(loglik)
+  
+}
+
+
+
+
+profile_likelihood_calc_shape <- function(){
+  
+  #Calculate profile for R by calculating mle for M at eacg value of R
+  
+  estimated_m_s <- numeric(length(r_range))
+  
+          for(i in seq_along(r_range)){
+            
+              mle_profile <- #find mle for r at each value of m
+                          optim(
+                          par = 1,
+                          r = r_range[i],
+                          fn = calc_negbinom_loglik_profile ,
+                          control = list(fnscale = -1),
+                          lower = 1,
+                          upper = 100 ,  
+                          method = "L-BFGS-B"
+          )
+          estimated_m_s[i] <- mle_profile$par
+            
+        }
+          
+  return(estimated_m_s)
+}
+
+estimated_m_values <- profile_likelihood_calc_shape() #all m values are the same, this make sense as m is the dude who will afect loglikelihood 
+
+
+r_profile_loglik_values <- numeric(length(r_range))
+
+for (i in seq_along(estimated_m_values)){
+  
+  r_profile_loglik_values[i] <- calc_negbinom_loglik_profile(m = estimated_m_values[i], r = r_range[i])
+  
+  
+}
+
+
+data_frame(x = r_range, val = r_profile_loglik_values) %>% 
+    ggplot(aes(x=x,y=val))+
+    geom_point(size = 1) +
+   scale_x_continuous(breaks = seq(0,0.8,by=0.05)) +
+    geom_vline(xintercept = 0.58, col = "red", lty = "dashed") +
+    labs(x = "R shape parameter value", y = "Profile Loglikelihood" , title = "Profile Loglikelihood of R Shape Parameter") +
+    theme_classic()
+
+
+
+
+
+
+```
+
+It can be seen that the profile likelihood for the M parameter is somewhat quadratic , but this is clearly not the case for the R shape parameter. Therefore it would be inappropriate to use a Wilks Likelihood interval or Wald interval for the shape parameter. The direct likelihood interval should be used. However, the quadracity of the M parameter profile likelihood means that asymptotic intervals relying on quadracity could be used.
 
 
 #Results 
