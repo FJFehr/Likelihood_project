@@ -344,7 +344,7 @@ r &= \frac{m^2}{Var(x) - m} \\
 M Mean Estimate & r Shape Estimate & AIC\tabularnewline
 \midrule
 \endhead
-6.810803 & 0.592616 & -9618.917\tabularnewline
+6.810803 & 0.592616 & 9626.917\tabularnewline
 \bottomrule
 \end{longtable}
 
@@ -380,7 +380,7 @@ Lamda 1 estimate & Lambda 2 estimate & Mixing Parameter p &
 AIC\tabularnewline
 \midrule
 \endhead
-19.38094 & 2.84069 & 0.2465036 & -12063.12\tabularnewline
+19.38094 & 2.84069 & 0.2465036 & 12075.12\tabularnewline
 \bottomrule
 \end{longtable}
 
@@ -427,7 +427,7 @@ data. MAYBE EXPLAIN THIS BETTER?
 Lamda estimate & Pi estimate & AIC\tabularnewline
 \midrule
 \endhead
-9.245627 & 0.2517669 & -15548.16\tabularnewline
+9.245627 & 0.2517669 & 15556.16\tabularnewline
 \bottomrule
 \end{longtable}
 
@@ -441,18 +441,27 @@ Model & AIC\tabularnewline
 \midrule
 \endhead
 Poisson & 20263.641\tabularnewline
-Negative Binomial & -9618.917\tabularnewline
-Poisson Mixture & -12063.122\tabularnewline
-Zero Inflated Poisson & -15548.157\tabularnewline
+Negative Binomial & 9626.917\tabularnewline
+Poisson Mixture & 12075.122\tabularnewline
+Zero Inflated Poisson & 15556.157\tabularnewline
 \bottomrule
 \end{longtable}
 
-The Zero Inflated Poisson model has the lowest AIC at -15548.157 value.
-This implies that is the best fitting model when compared to the other
-three models. The goodness of the Zero Inflated Poisson fit will now be
-assessed further.
+The Negative Binomial has the lowest AIC value at 9626.92. This implies
+that is the best fitting model when compared to the other three models.
+The goodness of the Negative Binomial fit will now be assessed further.
 
 \includegraphics{likelihood_files/figure-latex/best_model_fit-1.pdf}
+
+\includegraphics{likelihood_files/figure-latex/qq_plot-1.pdf}
+
+\begin{verbatim}
+## 
+##  Pearson's Chi-squared test
+## 
+## data:  filter(comparison_df, Type == "observed")$Frequency and filter(comparison_df, Type != "observed")$Frequency
+## X-squared = 1456, df = 1430, p-value = 0.3101
+\end{verbatim}
 
 \subsection{Profile Likelihood \& Confidence
 Intervals}\label{profile-likelihood-confidence-intervals}

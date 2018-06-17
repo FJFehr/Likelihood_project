@@ -75,6 +75,7 @@ library(kableExtra)
 library(tidyverse)
 library(cowplot)
 library(ZIM) #for generating observations
+library(fitdistrplus)
 # 
 # devtools::install_version("rmarkdown", version = "1.8", repos = "http://cran.us.r-project.org")
 
@@ -275,7 +276,7 @@ mle_negbinom <-
 m_estimate <- mle_negbinom$par[1]
 r_estimate <- m_estimate^2 /(var(x)-m_estimate)
 
-aic_negbinom <- -2*-mle_negbinom$value + 2*(2)
+aic_negbinom <- -2*mle_negbinom$value + 2*(2)
 
 
 data_frame(`M Mean Estimate`= m_estimate , `r Shape Estimate` = r_estimate, AIC = aic_negbinom) %>% knitr::kable()
@@ -333,7 +334,7 @@ lambda_1_estimate <- mle_poismix$par[1]
 lambda_2_estimate <- mle_poismix$par[2]
 p_estimate <- mle_poismix$par[3]
 
-aic_poismix <- -2*-mle_poismix$value + 2*(3)
+aic_poismix <- -2*mle_poismix$value + 2*(3)
 
 
 data_frame(`Lamda 1 estimate`= lambda_1_estimate , `Lambda 2 estimate` = lambda_2_estimate, `Mixing Parameter p` = p_estimate, AIC = aic_poismix) %>% knitr::kable()
@@ -412,7 +413,7 @@ mle_zip <-
 lambda_zip_estimate <- mle_zip$par[1]
 pi_zip_estimate <- mle_zip$par[2]
 
-aic_zip <- -2*-mle_zip$value + 2*(2)
+aic_zip <- -2*mle_zip$value + 2*(2)
 
 data_frame(`Lamda estimate`= lambda_zip_estimate , `Pi estimate` = pi_zip_estimate,  AIC = aic_zip) %>% knitr::kable()
 
@@ -440,7 +441,7 @@ data_frame(Model = model, AIC = aics) %>% knitr::kable()
 ```
 
 
-The Zero Inflated Poisson model has the lowest AIC at -15548.157 value. This implies that is the best fitting model when compared to the other three models. The goodness of the Zero Inflated Poisson fit will now be assessed further.
+The Negative Binomial has the lowest AIC value at `r round(aic_negbinom,2)`. This implies that is the best fitting model when compared to the other three models. The goodness of the Negative Binomial fit will now be assessed further.
 
 
 ```{r best_model_fit}
@@ -449,20 +450,28 @@ The Zero Inflated Poisson model has the lowest AIC at -15548.157 value. This imp
 
 #generate zip_predictions
 
-generate_zip_prob <- function(lambda,pi,x){
+# generate_zip_prob <- function(lambda,pi,x){
+#   
+#   if(x == 0){
+#     return(pi + (1-pi)*exp(-lambda))
+#   }else{
+#     return((1-pi)*dpois(x=x,lambda=lambda))
+#     
+#   }
+#   
+# }
+
+
+generate_negbinom_prob <- function(m,r,x){
   
-  if(x == 0){
-    return(pi + (1-pi)*exp(-lambda))
-  }else{
-    return((1-pi)*dpois(x=x,lambda=lambda))
-    
-  }
+
+  (gamma(r + x))/(factorial(x)*gamma(r)) * (m/(m+r))^(x) * (r /(r+m))^(r)
   
 }
 
 probs <- numeric(81)
 for (i in 0:80){
-  probs[i+1] <- generate_zip_prob(lambda = lambda_zip_estimate ,pi = pi_zip_estimate , x=i)
+  probs[i+1] <- generate_negbinom_prob(m = m_estimate , r = r_estimate , x=i)
 }
 
 #get expected frequencies
@@ -481,7 +490,7 @@ comparison_df <- table(dat$Counts) %>%
 ggplot(comparison_df, aes(x = accident_count , y = Frequency , fill = Type )) +
   geom_bar( stat="identity",alpha = .8,
           position="dodge") +
-  labs(x="Accident counts", y="Frequency" , title="Observed vs Expected Frequencies as per Zero Inflated Poisson") +
+  labs(x="Accident counts", y="Frequency" , title="Observed vs Expected Frequencies as per Negative Binomial") +
   theme_classic() +
   theme(plot.title = element_text(hjust=0.5))
 
@@ -491,19 +500,100 @@ ggplot(comparison_df, aes(x = accident_count , y = Frequency , fill = Type )) +
 
 
 
+#check if any of this is right
+
+fit_nbinom <- fitdist(data = x , method = "mle","nbinom")
+
+# q-q
+
+
+
 ```
 
 
+```{r qq_plot}
+
+
+fitdistrplus::qqcomp(fit_nbinom,addlegend = F, main = "Q-Q plot for Negative Binomial")
+
+
+chisq.test(filter(comparison_df,Type == "observed")$Frequency,filter(comparison_df,Type != "observed")$Frequency)
+
+
+```
 
 
 
 
 ##Profile Likelihood & Confidence Intervals
 
--Plot likelihood surface (two parameters at a time if necessary, fixing the
-other parameters at their MLEs).
+INSERT LATEX HERE
 
--Must be program the profile likelihoods, CI's ourselves
+```{r profile_likelihood}
+
+
+#need to calulcate mle at EACH point
+
+
+calc_negbinom_loglik_profile <- function(r,m){
+  
+  loglik <- -n*log(gamma(r)) + sum(log(gamma(r+x))) - sum(log(factorial(x))) + sum(x) * log(m/(m+r)) + n*r*log(r/(r+m))
+  
+  return(loglik)
+  
+}
+
+
+
+profile_likelihood_calc_mean <- function(){
+  
+  #Calculate profile for M by calculating mle for R at eacg value of M
+  
+  estimated_r_s <- numeric(56)
+  
+          for(m in 1:56){
+            
+              mle_profile <- #find mle for r at each value of m
+                          optim(
+                          par = 1,
+                          m = m,
+                          fn = calc_negbinom_loglik_profile ,
+                          control = list(fnscale = -1),
+                          lower = 0.1,
+                          upper = 30 ,  # i presume shape cant take a ridiculous value like this
+                          method = "L-BFGS-B"
+          )
+          estimated_r_s[m] <- mle_profile$par
+            
+        }
+          
+  return(estimated_r_s)
+}
+
+estimated_r_values <- profile_likelihood_calc_mean()
+
+
+#For each r in estimated_r_values, sub in M from 1:56 and trace it 
+
+m_profile_loglik_values <- numeric(56)
+
+for (i in seq_along(estimated_r_values)){
+  
+  m_profile_loglik_values[i] <- calc_negbinom_loglik_profile(r = estimated_r_values[i], m = i)
+  
+  
+}
+
+
+plot(x = 1:56 , y = m_profile_loglik_values , type = "l", xlab = "M parameter value", ylab = "Profile Loglikelihood")
+
+
+
+
+
+
+```
+
 
 #Results 
 
