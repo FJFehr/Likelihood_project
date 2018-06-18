@@ -9,8 +9,7 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-Start off with the parameterisation 
-
 \begin{align*}
-\binom{x+r-1}{x} &= {\frac {(x+r-1)(x+r-2)\dotsm (r)}{x!}} = {\frac {\Gamma(x+r)}{x!\,\Gamma (r)}}
+\hat{r} & \stackrel{.}{\sim} N(r,I(r)^{-1}) \\ 
+\hat{m} & \stackrel{.}{\sim} N(m,I(m)^{-1})
 \end{align*}

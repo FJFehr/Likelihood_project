@@ -376,12 +376,13 @@ l(m,r|x) & = -n\ln[\Gamma (r)] + \sum^{n}_{i=1} \ln(\Gamma (r + x_i)) -\sum^{n}_
 \end{align*}
 
 It is important to note that the variance of a Negative Binomial under
-this parameterisation is \(m + \frac{m^2}{r}\) and larger than our mean.
-This would suggest a better fit than our Poisson model. Shape parameters
-are often regarded as nuisance parameters and do not play a meaningful
-role in maximising likelihood. Therefore, since we desire no under or
-over dispersion, we can express the shape parameter as a function of the
-mean parameter to be esimated and the sample variance.
+this parameterisation is \(m + \frac{m^2}{r}\) and always larger than
+our mean \(m\). This would suggest a better fit than our Poisson model.
+Shape parameters are often regarded as nuisance parameters and do not
+play a meaningful role in maximising likelihood. Therefore, since we
+desire no under or over dispersion, we can express the shape parameter
+as a function of the mean parameter to be esimated and the sample
+variance.
 
 \begin{align*}
 Var(x) &= m + \frac{m^2}{r} \\
@@ -562,6 +563,41 @@ interval or Wald interval for the shape parameter. The direct likelihood
 interval should be used. However, the quadracity of the M parameter
 profile likelihood means that asymptotic intervals relying on quadracity
 could be used.
+
+\subsubsection{Wald Interval}\label{wald-interval}
+
+We can attain an interval for out Maximum Likelihood Estimates if we
+assume they have asymptotic normal distribution. This means
+\(n\to\infty\) the estimates will be approximately normal with the
+following parameters.
+
+\[ \hat{r} \stackrel{.}{\sim} N(r,I(r)^{-1}) \\ 
+\hat{m} \stackrel{.}{\sim} N(m,I(m)^{-1})\]
+
+This means that we can form asymptotic confidence intervals for \(m\)
+and \(r\) know as a Wald interval. The advantages of this is it is
+simple to calculate provide you have a standard error estimate.
+
+\subsubsection{Wilks Likelihood ratio}\label{wilks-likelihood-ratio}
+
+The likelihood interval can be found as \(R(\theta) > \gamma^p\), where
+\(\gamma\) can be based on a \(\chi^2\) approximation and \(p\) is the
+dimension of \(\theta\). Equivalently we can use the deviance:
+
+\[ -2[\ell(\theta_p) - \ell(\hat{\theta_p})] \sim \chi^2_p. \] We solve
+for points of \(\theta\) where the deviance equals the 95th percentile
+of \(\chi^2_p\).
+
+If the assumption of multivariate normality (likelihood is quadratic in
+all dimensions) is not met, it is better to use the likelihood function.
+For a likelihood interval we would choose all \(\theta\) where
+
+\[W = 2\text{log}R(\theta) \sim \chi^2_p\]
+
+where \(p\) is the dimension of \(\theta\). This translates to all
+values of \(\theta\) where
+
+\[\ell(\theta) > \ell(\hat{\theta}) + p \log(\gamma)\]
 
 \section{Results}\label{results}
 
