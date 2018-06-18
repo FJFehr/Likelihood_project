@@ -311,6 +311,12 @@ n &= \text{Number of observations}
 
 \subsubsection{Poisson}\label{poisson}
 
+The Poisson is a discrete probability distribution that expresses the
+probability of a given number of events occurring in a fixed interval of
+time if these events occur with a known constant rate and independently
+of the time since the last event.This is typically used in count data
+where your mean and variance are equal.
+
 \begin{align*} 
 p(x) & =  \frac{e^{-\lambda} \lambda^x}{x!},\ \ x\in \{0,1,\ldots,\infty\},\lambda>0 \\
 \\
@@ -323,7 +329,9 @@ l(\lambda|x) & =-n\lambda +  \left(\sum_{i=1}^n x_i\right)\ln \lambda - \sum_{i=
 
 The Poisson is characterised by the \(\lambda\) parameter which denotes
 the population average rate of event occurence. In this context it would
-be the average number of accidents per unit time frame.
+be the average number of accidents per unit time frame. Due to the
+variance being far higher than our mean in our data we would expect that
+a Poisson distribution would not fit very well.
 
 \begin{longtable}[]{@{}rrr@{}}
 \caption{Poisson MLE's \& information metrics}\tabularnewline
@@ -341,6 +349,22 @@ be the average number of accidents per unit time frame.
 
 \subsubsection{Negative Binomial}\label{negative-binomial}
 
+The Negative Binomial distribution is a discrete probability function of
+the number of successes in a sequence of independant and identitically
+distributed Bernoulli trials. The parameters \(p\) \& \(r\) measure the
+probability of success in an individual trial and the number of
+successes until \(r\) failures occure. The mean in a negative binomial
+is defined as \(m={\frac{pr}{1-p}}\) thus we can reparamatize the
+distribution in terms of the mean parameter m and shape parameter \(r\)
+such that \(p={\frac{m}{m+r}}\) and \(1-p={\frac{r}{m+r}}\). We can also
+manipulate the constant term as follows.
+
+\begin{align*}
+\binom{x+r-1}{x} &= {\frac {(x+r-1)(x+r-2)\dotsm (r)}{x!}} = {\frac {\Gamma(x+r)}{x!\,\Gamma (r)}}
+\end{align*}
+
+This gives us the negative binomial in the form
+
 \begin{align*} 
 p(x) & =  {\frac {\Gamma (r+x)}{x!\,\Gamma (r)}}\left({\frac {m}{r+m}}\right)^{x}\left({\frac {r}{r+m}}\right)^{r}\quad {\text{for }}x=0,1,2,\dotsc \\
 \\
@@ -351,21 +375,19 @@ L(m,r|x) & ={[\frac{1}{\Gamma (r)}]}^{n} \prod_{i=1}^{n}{\frac{\Gamma (r+x_i)}{x
 l(m,r|x) & = -n\ln[\Gamma (r)] + \sum^{n}_{i=1} \ln(\Gamma (r + x_i)) -\sum^{n}_{i=1}\ln x_i! + \sum^{n}_{i=1} x_{i} \ln (\frac{m}{r + m}) + nr \ln (\frac{r}{r + m})
 \end{align*}
 
-This parameterisation of the negative binomial is characterised by the
-mean parameter m and the shape parameter r. It is important to note that
-the variance of a Negative Binomial under this parameterisationg is
-\(m + \frac{m^2}{r}\). Shape parameters are often regarded as nuisance
-parameters and do not play a meaningful role in maximising likelihood.
-Therefore, since we desire no under or over dispersion, we can express
-the shape parameter as a function of the mean parameter to be esimated
-and the sample variance.
-
-CHECK THIS! LOOK AT PAPER CALLED ESTIMATING SHAPE. I HAVE HIGHLIGHTED
-SOME STUFF ON SECOND PAGE
+It is important to note that the variance of a Negative Binomial under
+this parameterisation is \(m + \frac{m^2}{r}\) and larger than our mean.
+This would suggest a better fit than our Poisson model. Shape parameters
+are often regarded as nuisance parameters and do not play a meaningful
+role in maximising likelihood. Therefore, since we desire no under or
+over dispersion, we can express the shape parameter as a function of the
+mean parameter to be esimated and the sample variance.
 
 \begin{align*}
 Var(x) &= m + \frac{m^2}{r} \\
+\\
 r &= \frac{m^2}{Var(x) - m} \\
+\\
 \hat{r} &= \frac{\hat{m}^2}{S^2 - \hat{m}}
 \end{align*}
 
@@ -379,7 +401,7 @@ Mean \(\hat{m}\) & Shape \(\hat{r}\) & AIC & BIC\tabularnewline
 Mean \(\hat{m}\) & Shape \(\hat{r}\) & AIC & BIC\tabularnewline
 \midrule
 \endhead
-6.8108 & 0.5926 & 9626.917 & 9630.314\tabularnewline
+6.8108 & 0.5926 & 9626.92 & 9630.31\tabularnewline
 \bottomrule
 \end{longtable}
 
@@ -389,8 +411,8 @@ A finite mixture distributon of two Poisson variables will now be
 explored. A possibly reason for the overdispersion is that the data are
 from two separate Poisson distributions. Since it is not known from
 which distribution that any given data point is from, presuming that the
-two distribution mixture is appropriate, an additional mixing parameter
-\(p\) needs to be estimated.
+two distribution mixture is appropriate, an additional mixing proportion
+parameter \(p\) needs to be estimated.
 
 \begin{align*} 
 p(x|\lambda_1,\lambda_2,p) & =  p\frac{e^{-\lambda_1} \lambda_1^x}{x!} + (1-p)\frac{e^{-\lambda_2} \lambda_2^x}{x!},\ \ x\in \{0,1,\ldots,\infty\},\lambda_1 , \lambda_2 , p >0 \\
@@ -404,10 +426,10 @@ l(\lambda_1,\lambda_2,p|x) & \sum^n_{i=1} \ln [ p\frac{e^{-\lambda_1} \lambda_1^
 
 The parameters \(\lambda_1\) and \(\lambda_2\) refer to the average
 number of road accidents per road stretch for the first and second
-distribution respectively. The parameter p is the mixing parameter. This
-represents the probability that a given observation belongs to
-distribution 1. Therefore, the probability that an observation belongs
-to distribution 2 is the \(1-p\) quantity.
+distribution respectively. The parameter \(p\) is the proportion
+parameter. This represents the probability that a given observation
+belongs to distribution 1. Therefore, the probability that an
+observation belongs to distribution 2 is the \(1-p\).
 
 \begin{longtable}[]{@{}rrrrr@{}}
 \caption{Poisson-Poisson MLE's \& information metrics}\tabularnewline
@@ -460,8 +482,11 @@ l(\lambda,\pi|x) &= \sum^{n}_{i=1} \ln[(1-I)[\pi +(1-\pi )e^{{-\lambda }}] + I[(
 \end{align*}
 
 The parameter \(\lambda\) is the average rate of accidents per road
-stretch. The parameter \(\pi\) is the probability of extra zeroes in the
-data. MAYBE EXPLAIN THIS BETTER?
+stretch. The parameter \(\pi\) is the probability of additional zeroes
+observed in our data. This mixture distribution has a mean of
+\((1-\pi)\lambda\) and variance \((1-\pi)\lambda(1+\pi\lambda)\). It is
+clear that the variation in this distribution is always greater than the
+average thus a good potential model to consider.
 
 \begin{longtable}[]{@{}rrrr@{}}
 \caption{Zero inflated Poisson MLE's \& information
@@ -490,17 +515,18 @@ The AIC and BIC results for each model are summarised below.
 \toprule
 Model & AIC & BIC\\
 \midrule
-Poisson & 20263.641 & 20269.039\\
-\textbf{Negative Binomial} & \textbf{9626.917} & \textbf{9630.314}\\
-Poisson Mixture & 12075.122 & 12076.520\\
-Zero Inflated Poisson & 15556.157 & 15559.555\\
+Poisson & 20263.64 & 20269.04\\
+\textbf{Negative Binomial} & \textbf{9626.92} & \textbf{9630.31}\\
+Poisson Mixture & 12075.12 & 12076.52\\
+Zero Inflated Poisson & 15556.16 & 15559.56\\
 \bottomrule
 \end{tabular}
 \end{table}
 
-The Negative Binomial has the lowest AIC value at 9626.92. This implies
-that is the best fitting model when compared to the other three models.
-The goodness of the Negative Binomial fit will now be assessed further.
+The Negative Binomial has the lowest AIC and BIC value at 9626.92 and
+9630.31 respectively. This implies that the Negative Binomial is the
+best fitting model when compared to the others. The goodness of fit will
+now be assessed further.
 
 \includegraphics{likelihood_files/figure-latex/best_model_fit-1.pdf}
 

@@ -192,6 +192,8 @@ n &= \text{Number of observations}
 
 ###Poisson 
 
+The Poisson is a discrete probability distribution that expresses the probability of a given number of events occurring in a fixed interval of time if these events occur with a known constant rate and independently of the time since the last event.This is typically used in count data where your mean and variance are equal.
+
 \begin{align*} 
 p(x) & =  \frac{e^{-\lambda} \lambda^x}{x!},\ \ x\in \{0,1,\ldots,\infty\},\lambda>0 \\
 \\
@@ -202,7 +204,7 @@ L(\lambda|x) & =\dfrac{e^{-n\lambda}\lambda^{\sum_{i=1}^n x_i}}{\prod_{i=1}^n x_
 l(\lambda|x) & =-n\lambda +  \left(\sum_{i=1}^n x_i\right)\ln \lambda - \sum_{i=1}^{n}\ln(x_i!)
 \end{align*}
 
-The Poisson is characterised by the $\lambda$ parameter which denotes the population average rate of event occurence. In this context it would be the average number of accidents per unit time frame.
+The Poisson is characterised by the $\lambda$ parameter which denotes the population average rate of event occurence. In this context it would be the average number of accidents per unit time frame. Due to the variance being far higher than our mean in our data we would expect that a Poisson distribution would not fit very well.
 
 ```{r poisson_fit}
 
@@ -211,9 +213,9 @@ mle_lambda <- round(sum(x)/n,4)
 
 loglik_poisson <- -n*mle_lambda + sum(x)*log(mle_lambda)  -sum(log(factorial(x)))
 
-aic_poisson <- -2*loglik_poisson + 2*(1)
+aic_poisson <- round(-2*loglik_poisson + 2*(1),2)
 
-bic_poisson <- -2*loglik_poisson + log(n)
+bic_poisson <- round(-2*loglik_poisson + log(n),2)
 
 data_frame(`$\\hat{\\lambda}$`= mle_lambda , AIC = aic_poisson, BIC = bic_poisson) %>% knitr::kable(caption = "Poisson MLE's & information metrics")
 
@@ -222,22 +224,13 @@ data_frame(`$\\hat{\\lambda}$`= mle_lambda , AIC = aic_poisson, BIC = bic_poisso
 
 ###Negative Binomial
 
-<!-- \begin{align*} -->
-<!-- f(x) & = \left( \begin{array}{c} -->
-<!-- x+j-1  \\ -->
-<!-- x  \end{array} \right)(1-\pi)^x\pi^j,\ \ x,\in \{0,1,\ldots,\infty\}, 0 \leq \pi \leq 1\\ -->
-<!-- \\ -->
-<!-- L(\lambda|x) & = \prod_{i=1}^n f(x_i) \\ -->
-<!-- \\ -->
-<!-- L(\lambda|x) & = \prod_{i=1}^n \left( \begin{array}{c} -->
-<!-- x_i+j-1  \\ -->
-<!-- x_i  \end{array} \right)(1-\pi)^{\sum_{i=1}^n x_i}\pi^{nj}\\ -->
-<!-- \\ -->
-<!-- l(\lambda|x) & = \sum_{i=1}^n \ln \left( \begin{array}{c} -->
-<!-- x_i+j-1  \\ -->
-<!-- x_i  \end{array} \right)+{\sum_{i=1}^n x_i} \ln (1-\pi) + {nj} \ln(\pi) -->
-<!-- \end{align*} -->
+The Negative Binomial distribution is a discrete probability function of the number of successes in a sequence of independant and identitically distributed Bernoulli trials. The parameters $p$ & $r$ measure the probability of success in an individual trial and the number of successes until $r$ failures occure. The mean in a negative binomial is defined as $m={\frac{pr}{1-p}}$ thus we can reparamatize the distribution in terms of the mean parameter m and shape parameter $r$ such that $p={\frac{m}{m+r}}$ and $1-p={\frac{r}{m+r}}$. We can also manipulate the constant term as follows.
 
+\begin{align*}
+\binom{x+r-1}{x} &= {\frac {(x+r-1)(x+r-2)\dotsm (r)}{x!}} = {\frac {\Gamma(x+r)}{x!\,\Gamma (r)}}
+\end{align*}
+
+This gives us the negative binomial in the form
 
 \begin{align*} 
 p(x) & =  {\frac {\Gamma (r+x)}{x!\,\Gamma (r)}}\left({\frac {m}{r+m}}\right)^{x}\left({\frac {r}{r+m}}\right)^{r}\quad {\text{for }}x=0,1,2,\dotsc \\
@@ -249,14 +242,13 @@ L(m,r|x) & ={[\frac{1}{\Gamma (r)}]}^{n} \prod_{i=1}^{n}{\frac{\Gamma (r+x_i)}{x
 l(m,r|x) & = -n\ln[\Gamma (r)] + \sum^{n}_{i=1} \ln(\Gamma (r + x_i)) -\sum^{n}_{i=1}\ln x_i! + \sum^{n}_{i=1} x_{i} \ln (\frac{m}{r + m}) + nr \ln (\frac{r}{r + m})
 \end{align*}
 
-This parameterisation of the negative binomial is characterised by the mean parameter m and the shape parameter r.
-It is important to note that the variance of a Negative Binomial under this parameterisationg is $m + \frac{m^2}{r}$. Shape parameters are often regarded as nuisance parameters and do not play a meaningful role in maximising likelihood. Therefore, since we desire no under or over dispersion, we can express the shape parameter as a function of the mean parameter to be esimated and the sample variance.
-
-CHECK THIS! LOOK AT PAPER CALLED ESTIMATING SHAPE. I HAVE HIGHLIGHTED SOME STUFF ON SECOND PAGE
+It is important to note that the variance of a Negative Binomial under this parameterisation is $m + \frac{m^2}{r}$ and always larger than our mean $m$. This would suggest a better fit than our Poisson model. Shape parameters are often regarded as nuisance parameters and do not play a meaningful role in maximising likelihood. Therefore, since we desire no under or over dispersion, we can express the shape parameter as a function of the mean parameter to be esimated and the sample variance.
 
 \begin{align*}
 Var(x) &= m + \frac{m^2}{r} \\
+\\
 r &= \frac{m^2}{Var(x) - m} \\
+\\
 \hat{r} &= \frac{\hat{m}^2}{S^2 - \hat{m}}
 \end{align*}
 
@@ -294,9 +286,9 @@ mle_negbinom <-
 m_estimate <- round(mle_negbinom$par[1],4)
 r_estimate <- round(m_estimate^2 /(var(x)-m_estimate),4)
 
-aic_negbinom <- -2*mle_negbinom$value + 2*(2)
+aic_negbinom <- round(-2*mle_negbinom$value + 2*(2),2)
 
-bic_negbinom <- -2*mle_negbinom$value + log(n)
+bic_negbinom <- round(-2*mle_negbinom$value + log(n),2)
 
 
 data_frame(`Mean $\\hat{m}$`= m_estimate , `Shape $\\hat{r}$` = r_estimate, AIC = aic_negbinom, BIC = bic_negbinom) %>% knitr::kable(caption = "Negative Binomial MLE's & information metrics")
@@ -304,10 +296,9 @@ data_frame(`Mean $\\hat{m}$`= m_estimate , `Shape $\\hat{r}$` = r_estimate, AIC 
 ```
 
 
-
 ###Mixture of 2 Poissons
 
-A finite mixture distributon of two Poisson variables will now be explored. A possibly reason for the overdispersion is that the data are from two separate Poisson distributions. Since it is not known from which distribution that any given data point is from, presuming that the two distribution mixture is appropriate, an additional mixing parameter $p$ needs to be estimated.
+A finite mixture distributon of two Poisson variables will now be explored. A possibly reason for the overdispersion is that the data are from two separate Poisson distributions. Since it is not known from which distribution that any given data point is from, presuming that the two distribution mixture is appropriate, an additional mixing proportion parameter $p$ needs to be estimated.
 
 
 \begin{align*} 
@@ -320,7 +311,7 @@ L(\lambda_1,\lambda_2,p|x) & =  \prod_{i=1}^n p\frac{e^{-\lambda_1} \lambda_1^{x
 l(\lambda_1,\lambda_2,p|x) & \sum^n_{i=1} \ln [ p\frac{e^{-\lambda_1} \lambda_1^{x_i}}{x_i!} + (1-p)\frac{e^{-\lambda_2} \lambda_2^{x_i}}{x_i!} ]
 \end{align*}
 
-The parameters $\lambda_1$ and $\lambda_2$ refer to the average number of road accidents per road stretch for the first and second distribution respectively. The parameter p is the mixing parameter. This represents the probability that a given observation belongs to distribution 1. Therefore, the probability that an observation belongs to distribution 2 is the $1-p$ quantity.
+The parameters $\lambda_1$ and $\lambda_2$ refer to the average number of road accidents per road stretch for the first and second distribution respectively. The parameter $p$ is the proportion parameter. This represents the probability that a given observation belongs to distribution 1. Therefore, the probability that an observation belongs to distribution 2 is the $1-p$.
 
 ```{r poisson_mixture_fit}
 
@@ -353,9 +344,9 @@ lambda_1_estimate <- round(mle_poismix$par[1],4)
 lambda_2_estimate <- round(mle_poismix$par[2],4)
 p_estimate <- round(mle_poismix$par[3],4)
 
-aic_poismix <- -2*mle_poismix$value + 2*(3)
+aic_poismix <- round(-2*mle_poismix$value + 2*(3),2)
 
-bic_poismix <- -2*mle_poismix$value + log(n)
+bic_poismix <- round(-2*mle_poismix$value + log(n),2)
 
 
 data_frame(`$\\hat{\\lambda_1}$`= lambda_1_estimate , `$\\hat{\\lambda_2}$` = lambda_2_estimate, `Proportion p` = p_estimate, AIC = aic_poismix, BIC = bic_poismix) %>% knitr::kable(caption = "Poisson-Poisson MLE's & information metrics")
@@ -394,8 +385,8 @@ L(\lambda,\pi|x) &= \prod^{n}_{i=1} [\pi +(1-\pi )e^{{-\lambda }}]^{1 - I}[(1-\p
 l(\lambda,\pi|x) &= \sum^{n}_{i=1} \ln[(1-I)[\pi +(1-\pi )e^{{-\lambda }}] + I[(1-\pi ){\frac  {\lambda ^{{x_{i}}}e^{{-\lambda }}}{x_{i}!}}]]
 \end{align*}
 
-The parameter $\lambda$ is the average rate of accidents per road stretch. The parameter $\pi$ is the probability of extra zeroes in the data.
-MAYBE EXPLAIN THIS BETTER?
+The parameter $\lambda$ is the average rate of accidents per road stretch. The parameter $\pi$ is the probability of additional zeroes observed in our data. This mixture distribution has a mean of $(1-\pi)\lambda$ and variance $(1-\pi)\lambda(1+\pi\lambda)$. It is clear that the variation in this distribution is always greater than the average thus a good potential model to consider.
+
 
 ```{r zero_inflated_fit}
 
@@ -435,9 +426,9 @@ mle_zip <-
 lambda_zip_estimate <- round(mle_zip$par[1],4)
 pi_zip_estimate <- round(mle_zip$par[2],4)
 
-aic_zip <- -2*mle_zip$value + 2*(2)
+aic_zip <- round(-2*mle_zip$value + 2*(2),2)
 
-bic_zip <- -2*mle_zip$value + log(n)
+bic_zip <- round(-2*mle_zip$value + log(n),2)
 
 data_frame(`$\\hat{\\lambda}$`= lambda_zip_estimate , `$\\hat{\\pi}$` = pi_zip_estimate,  AIC = aic_zip, BIC = bic_zip) %>% 
   knitr::kable(caption = "Zero inflated Poisson MLE's & information metrics")
@@ -467,6 +458,35 @@ data_frame(Model = model, AIC = aics,BIC = bics) %>%
 
 
 The Negative Binomial has the lowest AIC and BIC value at `r round(aic_negbinom,2)` and `r round(bic_negbinom,2)` respectively. This implies that the Negative Binomial is the best fitting model when compared to the others. The goodness of fit will now be assessed further.
+
+```{r NegBin Likelihood vis}
+# #Here are some 3d plots from Birgits code - since r is a function of m it has no affect in the plots. But they still cool just take a soek to run
+# 
+# #m range for plotting
+# m_range_ll <- seq(1,20, length.out = 100) 
+# #r range for plotting
+# r_range_ll <- seq(0.01,2,length.out = 100)
+# 
+# #every combination - kinda like a kronecker product
+# pp <- expand.grid(x = m_range_ll, y = r_range_ll)
+# 
+# #loglike z range for plotting
+# z_range_ll <- numeric(length(pp$x))
+# for(i in 1:length(pp$x)){
+#   z_range_ll[i] <- calc_negbinom_loglik(pp[i,])
+# }
+# z_range_ll <- unlist(z_range_ll)
+# Z <- matrix(z_range_ll,nrow=100)
+# 
+# #Generate 3 dimensional plots
+# image(m_range_ll, r_range_ll, Z, col = heat.colors(30), 
+#         xlab = expression(mu), ylab = expression(sigma))     
+# 
+# contour(m_range_ll, r_range_ll, Z, add = F, nlevels = 30, 
+#         xlab = expression(mu), ylab = expression(sigma))
+# 
+# persp(m_range_ll,r_range_ll, Z, theta = 10, phi = 25)
+```
 
 
 ```{r best_model_fit}
@@ -546,8 +566,6 @@ chisq.test(filter(comparison_df,Type == "observed")$Frequency,filter(comparison_
 
 
 ```
-
-
 
 
 ##Profile Likelihood & Confidence Intervals
@@ -699,9 +717,6 @@ data_frame(x = r_range, val = r_profile_loglik_values) %>%
     geom_vline(xintercept = 0.58, col = "red", lty = "dashed") +
     labs(x = "R shape parameter value", y = "Profile Loglikelihood" , title = "Profile Loglikelihood of R Shape Parameter") +
     theme_classic()
-
-
-
 
 
 

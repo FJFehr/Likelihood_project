@@ -9,14 +9,8 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-
-
-\begin{align*}
-\text{AIC} &= -2l(\hat{\theta}) + 2\text{p} \\
-p &= \text{Number of estimated parameters}
-\end{align*}
+Start off with the parameterisation 
 
 \begin{align*}
-\text{BIC} &= -2l(\hat{\theta}) + log(n) \\
-n &= \text{Number of observations}
+\binom{x+r-1}{x} &= {\frac {(x+r-1)(x+r-2)\dotsm (r)}{x!}} = {\frac {\Gamma(x+r)}{x!\,\Gamma (r)}}
 \end{align*}
