@@ -1,0 +1,5 @@
+"0","lower_bound_direct_interval_m <- uniroot(fnct_direct, c(1, m_estimate) , max_m_loglikelihood = max_m_loglikelihood , gamma = 0.15 )
+"
+"2","Error in uniroot(fnct_direct, c(1, m_estimate), max_m_loglikelihood = max_m_loglikelihood,  : 
+  f() values at end points not of opposite sign
+"

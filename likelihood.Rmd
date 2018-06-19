@@ -23,7 +23,7 @@ CommonAffiliation_12: FALSE # If Author 1 and 2 have a common affiliation. Works
 
 #CorrespAuthor_1: TRUE  # If corresponding author is author 3, e.g., use CorrespAuthor_3: TRUE
 
-keywords: "Likelihood \\sep Overdispersion \\sep Soek" # Use \\sep to separate
+keywords: "Likelihood \\sep Overdispersion \\sep Count data" # Use \\sep to separate
 JELCodes: ""
 
 # Comment: ----- Manage headers and footers:
@@ -57,7 +57,7 @@ output:
     include:
       in_header: Tex/packages.txt # Reference file with extra packages
 abstract: |
-  This project will explore the Accidents dataset and try fit a Poisson, Negative Binomial, Mixture of 2 Poissons and zero inflated Poisson models to the data. The model with the strongest support will be chosen and discussed. Profile likelihoods and confidence intervals for the parameters will be found and displayed of the chosen model.
+  This project will explore the Accidents dataset. Various count models such as Poisson, Negative Binomial, Mixture of 2 Poissons and Zero Inflated Poisson models will be applied to the data. The model with the strongest support will be chosen and discussed. Profile likelihoods and confidence intervals for the parameters will be found and displayed for the chosen model.
 ---
 
 <!-- First: Set your default preferences for chunk options: -->
@@ -93,7 +93,7 @@ n <- nrow(dat)
 
 #Introduction
 
-This assignment is an explorative report on a dataset containing the number of accidents on two-lane (same direction) road segments in Cape Town over a five-year period. The segments differ in length between 0.2 and 7.2 km. The aim of the report is to find and fit a model which accurately describes the accident dataset. This report will first explore the data then fit different adequate distributions and choose the most appropriate one. Once a model has been selected the profile likelihood and confidence intervals will be programmed and calculated from from first principles. The results will then be analysed critically and conclusions will be made and consider further considerations in the study.
+This assignment is an explorative report on a dataset containing the number of accidents on two-lane (same direction) road segments in Cape Town over a five-year period. The segments differ in length between 0.2 and 7.2 km. The aim of the report is to find and fit a model which accurately describes the accident dataset. This report will first explore the data then fit different count distributions. The best fitting model will then be chosen. Once a model has been selected, the profile likelihood and confidence intervals for the model parameters will be calculated. The results will then be analysed critically and conclusions will be made whilst suggesting further areas of investigation.
 
 ##Exploratory data analysis
 
@@ -731,14 +731,14 @@ It can be seen that the profile likelihood for the M parameter is somewhat quadr
 We can attain an interval for out Maximum Likelihood Estimates if we assume they have asymptotic normal distribution. This means $n\to\infty$ the estimates will be approximately normal with the following parameters.
 
 \begin{align*}
-\hat{r} & \stackrel{.}{\sim} N(r,I(r)^{-1}) \\ 
-\hat{m} & \stackrel{.}{\sim} N(m,I(m)^{-1})
+\hat{r} & \stackrel{.}{\sim} N(r,I(\hat{r})^{-1}) \\ 
+\hat{m} & \stackrel{.}{\sim} N(m,I(\hat{m})^{-1})
 \end{align*}
 
-This means that we can form asymptotic confidence intervals for $m$ and $r$ know as a Wald interval. The advantages of this is it is simple to calculate provide you have a standard error estimate.
+This means that we can form asymptotic confidence intervals for $m$ and $r$ know as a Wald interval. The advantages of this is it is simple to calculate provided you have a standard error estimate. Since the profile likelihood of the shape parameter r is not quadratic around the MLE, we shall avoid this type of interval and the Wilks Likelihood ratio interval. The direct likelihood interval shall be used instead.
 
 ```{r Wald Interval estimation}
-#Waldy Boi for m need to calc se_m
+
 
 #according to my maths this would give us the fisher info (sent a picture via whatsapp)
 fisher_info_m <- function(r,m){
@@ -747,19 +747,15 @@ fisher_info_m <- function(r,m){
   return(info)
 }
 
-se_m <- sqrt(fisher_info_m(r_estimate,m_estimate))
+
+
+se_m <- sqrt(fisher_info_m(r_estimate,m_estimate)^(-1))
 
 wald_m <- c(0,0)
 wald_m[1] <- m_estimate-1.96*se_m
 wald_m[2] <- m_estimate+1.96*se_m
 
-#Waldy Boi for r need to calc se_r
-#this se is more difficult as we cant solve neatly for fisher info
-se_r <- 0
 
-wald_r <- c(0,0)
-wald_r[1] <- r_estimate-1.96*se_r
-wald_r[2] <- r_estimate+1.96*se_r
 
 # Here is an example to get a SE from the hessian but im unsure how since our LL has one parameter...
 
@@ -775,9 +771,53 @@ wald_r[2] <- r_estimate+1.96*se_r
 
 ### Wilks Likelihood ratio 
 
-The Wilks Likelihood Ratio statistic is based on the deviance and is used to compare a certain parameter against the Maximum Likelihood estimate for that parameter. If the data come from a normal distribution the following result is true, but if the likelihood is quadratic the following is asymptotically true.
+The Wilks Likelihood Ratio statistic is based on the deviance and is used to compare a certain parameter against the Maximum Likelihood estimate for that parameter. If the data come from a Normal distribution the following result is true, but if the likelihood is quadratic the following is asymptotically true.
 
-$$W = 2\text{log}R(\theta) \sim \chi^2_p$$
+$$W = -2\text{log}R(\theta) \sim \chi^2_p$$
+
+```{r wilks_ratio_interval}
+
+
+#select all bounds which meet a cutoff,
+#done for m only
+
+#plug in mle values to get l(theta_hat)
+max_m_loglikelihood <- calc_negbinom_loglik_profile(m = m_estimate , r = r_estimate)
+
+fnct <- function(m, max_m_loglikelihood, cutoff = qchisq(.95,1)) {
+
+  # out <- #using function that i used to calculate joint MLE for m and R the only downside to this is that it is NOT taking in different shape parameters...check out the function
+  # optim(
+  # par = m,
+  # fn = calc_negbinom_loglik ,
+  # control = list(fnscale = -1),
+  # lower = 3,
+  # upper = 30 ,
+  # method = "L-BFGS-B"
+  # )
+  
+  f <- 2 * (max_m_loglikelihood - calc_negbinom_loglik_profile(m = m ,r =r_estimate)) - cutoff #this value should be zero for the constraints to be satisfied
+  #replcae qchisq() with a random gamma cutoff if necesary
+  
+}
+
+
+
+
+
+lower_bound_wilk_interval <- uniroot(fnct, c(1, m_estimate) , max_m_loglikelihood = max_m_loglikelihood)
+upper_bound_wilk_interval <- uniroot(fnct, c(m_estimate, 52) , max_m_loglikelihood = max_m_loglikelihood)
+
+wilks_likelihood <- c(lower_bound_wilk_interval$root,upper_bound_wilk_interval$root)
+
+
+
+
+```
+
+
+
+
 
 ### Pure Likelihood Interval
 
@@ -786,14 +826,32 @@ The likelihood interval can be found as $R(\theta) > \gamma^p$, where $\gamma$ c
 $$ -2[\ell(\theta_p) - \ell(\hat{\theta_p})] \sim \chi^2_p. $$ We solve for points of $\theta$ where the deviance equals the 95th percentile of $\chi^2_p$. 
 
 ```{r}
-#So this is birgits function not entirely sure what its doing yet
 
-fnct <- function(lambda, x) {
-  -2 * (calc_negbinom_loglik() - calc_negbinom_loglik(m_estimate)) - qchisq(0.95, 2)
+
+
+fnct_direct <- function(m, max_m_loglikelihood, gamma = 0.15) {
+
+  # out <- #using function that i used to calculate joint MLE for m and R the only downside to this is that it is NOT taking in different shape parameters...check out the function
+  # optim(
+  # par = m,
+  # fn = calc_negbinom_loglik ,
+  # control = list(fnscale = -1),
+  # lower = 3,
+  # upper = 30 ,
+  # method = "L-BFGS-B"
+  # )
+  
+  f <-  (max_m_loglikelihood - calc_negbinom_loglik_profile(m = m ,r =r_estimate)) - log(gamma) #this value should be zero for the constraints to be satisfied
+  #replcae qchisq() with a random gamma cutoff if necesary
+  
 }
 
-uniroot(fnct, c(0.5, mle), x = x)
-uniroot(fnct, c(mle, 200), x = x)
+
+
+#here is an example of how to do direct likelihood for M
+
+lower_bound_direct_interval_m <- uniroot(fnct_direct, c(1, m_estimate) , max_m_loglikelihood = max_m_loglikelihood , gamma = 0.15 )
+upper_bound_direct_interval_m <- uniroot(fnct_direct, c(m_estimate, 52) , max_m_loglikelihood = max_m_loglikelihood , gamma = 0.15)
 ```
 
 If the assumption of multivariate normality (likelihood is quadratic in all dimensions) is not met, it is better to use the likelihood function. For a likelihood interval we would choose all $\theta$ where 
@@ -808,11 +866,7 @@ $$\ell(\theta) > \ell(\hat{\theta}) + p \log(\gamma)$$
 
 #Results 
 
-<<<<<<< Updated upstream
 
-=======
--Are parameter estimates correlated?
->>>>>>> Stashed changes
 
 #Conclusion
 

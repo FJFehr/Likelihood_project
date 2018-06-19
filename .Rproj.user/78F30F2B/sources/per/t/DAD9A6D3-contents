@@ -23,7 +23,7 @@ CommonAffiliation_12: FALSE # If Author 1 and 2 have a common affiliation. Works
 
 #CorrespAuthor_1: TRUE  # If corresponding author is author 3, e.g., use CorrespAuthor_3: TRUE
 
-keywords: "Likelihood \\sep Overdispersion \\sep Soek" # Use \\sep to separate
+keywords: "Likelihood \\sep Overdispersion \\sep Count data" # Use \\sep to separate
 JELCodes: ""
 
 # Comment: ----- Manage headers and footers:
@@ -57,7 +57,7 @@ output:
     include:
       in_header: Tex/packages.txt # Reference file with extra packages
 abstract: |
-  This project will explore the Accidents dataset and try fit a Poisson, Negative Binomial, Mixture of 2 Poissons and zero inflated Poisson models to the data. The model with the strongest support will be chosen and discussed. Profile likelihoods and confidence intervals for the parameters will be found and displayed of the chosen model.
+  This project will explore the Accidents dataset. Various count models such as Poisson, Negative Binomial, Mixture of 2 Poissons and Zero Inflated Poisson models will be applied to the data. The model with the strongest support will be chosen and discussed. Profile likelihoods and confidence intervals for the parameters will be found and displayed for the chosen model.
 ---
 
 <!-- First: Set your default preferences for chunk options: -->
@@ -73,7 +73,7 @@ library(knitr)
 library(ggplot2)
 library(kableExtra)
 library(tidyverse)
-library(cowplot)
+library(cowplot) #for plotting cows
 library(ZIM) #for generating observations
 library(fitdistrplus)
 # 
@@ -93,7 +93,7 @@ n <- nrow(dat)
 
 #Introduction
 
-This assignment is an explorative report on a dataset containing accident counts. The aim of the report is to find and fit a model which accurately describes the accident dataset. This report will first explore the data then fit different adequate distributions and choose the most appropriate one. Once a model has been selected the profile likelihood and confidence intervals will be programmed and calculated from from first principles. The results will then be analysed critically and conclusions will be made and consider further considerations in the study.
+This assignment is an explorative report on a dataset containing the number of accidents on two-lane (same direction) road segments in Cape Town over a five-year period. The segments differ in length between 0.2 and 7.2 km. The aim of the report is to find and fit a model which accurately describes the accident dataset. This report will first explore the data then fit different count distributions. The best fitting model will then be chosen. Once a model has been selected, the profile likelihood and confidence intervals for the model parameters will be calculated. The results will then be analysed critically and conclusions will be made whilst suggesting further areas of investigation.
 
 ##Exploratory data analysis
 
@@ -136,7 +136,9 @@ Summary statistics of the data are shown below.
 
 ```{r summary_stat , fig.cap = "Summary Statistics of accident data \\label{summary_stats}"}
 
-summarize(.data = dat, Mean= mean(Counts), Variance = var(Counts), Median = median(Counts)) %>% knitr::kable()
+summarize(.data = dat, Mean= round(mean(Counts),4), Variance = round(var(Counts),4), Median = median(Counts)) %>% knitr::kable(caption = "Summary statisitics")
+
+
 
 ```
 
@@ -146,15 +148,19 @@ In the Poisson distribution, the mean should equal the variance. The sample vari
 ### Symmetry
 This property is visually seen in the histogram and boxplot. All counts are greater than zero with a median value of 4 accidents. The largest accident observed is 70 accidents. THe histogram shows that the data are non-symetrical and positively skewed which is usually expected of count data.
 
+```{r}
+#percentage outliers - 3rd quartile is 9
+perc_outlier <- round(length(dat$Counts[dat$Counts > 1.5*9])/length(dat$Counts),4)*100
+```
+
+
 ### Outliers
-From the boxplot it clear that many outliers exist. One common method of classifying a point as an extreme value or outlier is if it falls more than 1.5 times the inner-quartile range above the upper quartile. The proportion of outliers within our data set amount to 15.26%.
+From the boxplot it clear that many outliers exist. One common method of classifying a point as an extreme value or outlier is if it falls more than 1.5 times the inner-quartile range above the upper quartile. The proportion of outliers within our data set amount to `r perc_outlier`%.
 
 ```{r}
 #five number summary of the data
 five_sum <- summary(dat)
 
-#percentage outliers - 3rd quartile is 9
-perc_outlier <- round(length(dat$Counts[dat$Counts > 1.5*9])/length(dat$Counts),4)*100
 ```
 
 
@@ -165,15 +171,28 @@ perc_outlier <- round(length(dat$Counts[dat$Counts > 1.5*9])/length(dat$Counts),
 The data is discrete, asymmetric, positive definite, contains many positive outliers and many zeros. This would suggest distributions such as Poisson, Negative Binomial, mixture distribution of 2 Poissons and a zero inflated Poisson. 
 
 ## Akiake Information Coefficient (AIC)
-should we look at biC?
-The AIC metric can be used to compare models from different families of distributions. They can be used to compare relative goodness of fit between models. A lower AIC value indicates a better fitting model.
 
+The AIC metric can be used to compare models from different families of distributions. They can be used to compare relative goodness of fit between models. Overfitting the model with too many parameter is penalised by an increased AIC, thus a lower AIC value indicates a better fitting model.
 
-$\text{AIC} = -2l(\hat{\theta}) + 2\text{p} \\
-p = \text{Number of estimated parameters}$
+\begin{align*}
+\text{AIC} &= -2l(\hat{\theta}) + 2\text{p} \\
+p &= \text{Number of estimated parameters}
+\end{align*}
 
+## Bayesian Information Criterion (BIC)
+
+This metric, like AIC, also compares relative goodness of fit between models but penalises complex models when the sample size is large. BIC tends to produce simpler models than AIC.
+
+\begin{align*}
+\text{BIC} &= -2l(\hat{\theta}) + log(n) \\
+n &= \text{Number of observations}
+\end{align*}
+
+## Model Distributions
 
 ###Poisson 
+
+The Poisson is a discrete probability distribution that expresses the probability of a given number of events occurring in a fixed interval of time if these events occur with a known constant rate and independently of the time since the last event.This is typically used in count data where your mean and variance are equal.
 
 \begin{align*} 
 p(x) & =  \frac{e^{-\lambda} \lambda^x}{x!},\ \ x\in \{0,1,\ldots,\infty\},\lambda>0 \\
@@ -185,41 +204,33 @@ L(\lambda|x) & =\dfrac{e^{-n\lambda}\lambda^{\sum_{i=1}^n x_i}}{\prod_{i=1}^n x_
 l(\lambda|x) & =-n\lambda +  \left(\sum_{i=1}^n x_i\right)\ln \lambda - \sum_{i=1}^{n}\ln(x_i!)
 \end{align*}
 
-The Poisson is characterised by the $\lambda$ parameter which denotes the population average rate of event occurence. In this context it would be the average number of accidents per unit time frame.
+The Poisson is characterised by the $\lambda$ parameter which denotes the population average rate of event occurence. In this context it would be the average number of accidents per unit time frame. Due to the variance being far higher than our mean in our data we would expect that a Poisson distribution would not fit very well.
 
 ```{r poisson_fit}
 
 #we can use mle to fit this
-mle_lambda <- sum(x)/n
+mle_lambda <- round(sum(x)/n,4)
 
 loglik_poisson <- -n*mle_lambda + sum(x)*log(mle_lambda)  -sum(log(factorial(x)))
 
-aic_poisson <- -2*loglik_poisson + 2*(1)
+aic_poisson <- round(-2*loglik_poisson + 2*(1),2)
 
-data_frame(`Lambda Estimate`= mle_lambda , AIC = aic_poisson) %>% knitr::kable()
+bic_poisson <- round(-2*loglik_poisson + log(n),2)
 
+data_frame(`$\\hat{\\lambda}$`= mle_lambda , AIC = aic_poisson, BIC = bic_poisson) %>% knitr::kable(caption = "Poisson MLE's & information metrics")
 
 ```
 
 
 ###Negative Binomial
 
-<!-- \begin{align*} -->
-<!-- f(x) & = \left( \begin{array}{c} -->
-<!-- x+j-1  \\ -->
-<!-- x  \end{array} \right)(1-\pi)^x\pi^j,\ \ x,\in \{0,1,\ldots,\infty\}, 0 \leq \pi \leq 1\\ -->
-<!-- \\ -->
-<!-- L(\lambda|x) & = \prod_{i=1}^n f(x_i) \\ -->
-<!-- \\ -->
-<!-- L(\lambda|x) & = \prod_{i=1}^n \left( \begin{array}{c} -->
-<!-- x_i+j-1  \\ -->
-<!-- x_i  \end{array} \right)(1-\pi)^{\sum_{i=1}^n x_i}\pi^{nj}\\ -->
-<!-- \\ -->
-<!-- l(\lambda|x) & = \sum_{i=1}^n \ln \left( \begin{array}{c} -->
-<!-- x_i+j-1  \\ -->
-<!-- x_i  \end{array} \right)+{\sum_{i=1}^n x_i} \ln (1-\pi) + {nj} \ln(\pi) -->
-<!-- \end{align*} -->
+The Negative Binomial distribution is a discrete probability function of the number of successes in a sequence of independant and identitically distributed Bernoulli trials. The parameters $p$ & $r$ measure the probability of success in an individual trial and the number of successes until $r$ failures occure. The mean in a negative binomial is defined as $m={\frac{pr}{1-p}}$ thus we can reparamatize the distribution in terms of the mean parameter m and shape parameter $r$ such that $p={\frac{m}{m+r}}$ and $1-p={\frac{r}{m+r}}$. We can also manipulate the constant term as follows.
 
+\begin{align*}
+\binom{x+r-1}{x} &= {\frac {(x+r-1)(x+r-2)\dotsm (r)}{x!}} = {\frac {\Gamma(x+r)}{x!\,\Gamma (r)}}
+\end{align*}
+
+This gives us the negative binomial in the form
 
 \begin{align*} 
 p(x) & =  {\frac {\Gamma (r+x)}{x!\,\Gamma (r)}}\left({\frac {m}{r+m}}\right)^{x}\left({\frac {r}{r+m}}\right)^{r}\quad {\text{for }}x=0,1,2,\dotsc \\
@@ -231,15 +242,14 @@ L(m,r|x) & ={[\frac{1}{\Gamma (r)}]}^{n} \prod_{i=1}^{n}{\frac{\Gamma (r+x_i)}{x
 l(m,r|x) & = -n\ln[\Gamma (r)] + \sum^{n}_{i=1} \ln(\Gamma (r + x_i)) -\sum^{n}_{i=1}\ln x_i! + \sum^{n}_{i=1} x_{i} \ln (\frac{m}{r + m}) + nr \ln (\frac{r}{r + m})
 \end{align*}
 
-This parameterisation of the negative binomial is characterised by the mean parameter m and the shape parameter r.
-It is important to note that the variance of a Negative Binomial under this parameterisationg is $m + \frac{m^2}{r}$. Shape parameters are often regarded as nuisance parameters and do not play a meaningful role in maximising likelihood. Therefore, since we desire no under or over dispersion, we can express the shape parameter as a function of the mean parameter to be esimated and the sample variance.
-
-CHECK THIS! LOOK AT PAPER CALLED ESTIMATING SHAPE. I HAVE HIGHLIGHTED SOME STUFF ON SECOND PAGE
+It is important to note that the variance of a Negative Binomial under this parameterisation is $m + \frac{m^2}{r}$ and always larger than our mean $m$. This would suggest a better fit than our Poisson model. Shape parameters are often regarded as nuisance parameters and do not play a meaningful role in maximising likelihood. Therefore, since we desire no under or over dispersion, we can express the shape parameter as a function of the mean parameter to be esimated and the sample variance.
 
 \begin{align*}
 Var(x) &= m + \frac{m^2}{r} \\
+\\
 r &= \frac{m^2}{Var(x) - m} \\
-\hat{r} &= \frac{\hat{m^2}}{S^2 - \hat{m}}
+\\
+\hat{r} &= \frac{\hat{m}^2}{S^2 - \hat{m}}
 \end{align*}
 
 ```{r negative_binomial_fit}
@@ -273,22 +283,22 @@ mle_negbinom <-
   method = "L-BFGS-B"
   )
 
-m_estimate <- mle_negbinom$par[1]
-r_estimate <- m_estimate^2 /(var(x)-m_estimate)
+m_estimate <- round(mle_negbinom$par[1],4)
+r_estimate <- round(m_estimate^2 /(var(x)-m_estimate),4)
 
-aic_negbinom <- -2*mle_negbinom$value + 2*(2)
+aic_negbinom <- round(-2*mle_negbinom$value + 2*(2),2)
+
+bic_negbinom <- round(-2*mle_negbinom$value + log(n),2)
 
 
-data_frame(`M Mean Estimate`= m_estimate , `r Shape Estimate` = r_estimate, AIC = aic_negbinom) %>% knitr::kable()
-
+data_frame(`Mean $\\hat{m}$`= m_estimate , `Shape $\\hat{r}$` = r_estimate, AIC = aic_negbinom, BIC = bic_negbinom) %>% knitr::kable(caption = "Negative Binomial MLE's & information metrics")
 
 ```
 
 
-
 ###Mixture of 2 Poissons
 
-A finite mixture distributon of two Poisson variables will now be explored. A possibly reason for the overdispersion is that the data are from two separate Poisson distributions. Since it is not known from which distribution that any given data point is from, presuming that the two distribution mixture is appropriate, an additional mixing parameter $p$ needs to be estimated.
+A finite mixture distributon of two Poisson variables will now be explored. A possibly reason for the overdispersion is that the data are from two separate Poisson distributions. Since it is not known from which distribution that any given data point is from, presuming that the two distribution mixture is appropriate, an additional mixing proportion parameter $p$ needs to be estimated.
 
 
 \begin{align*} 
@@ -301,7 +311,7 @@ L(\lambda_1,\lambda_2,p|x) & =  \prod_{i=1}^n p\frac{e^{-\lambda_1} \lambda_1^{x
 l(\lambda_1,\lambda_2,p|x) & \sum^n_{i=1} \ln [ p\frac{e^{-\lambda_1} \lambda_1^{x_i}}{x_i!} + (1-p)\frac{e^{-\lambda_2} \lambda_2^{x_i}}{x_i!} ]
 \end{align*}
 
-The parameters $\lambda_1$ and $\lambda_2$ refer to the average number of road accidents per road stretch for the first and second distribution respectively. The parameter p is the mixing parameter. This represents the probability that a given observation belongs to distribution 1. Therefore, the probability that an observation belongs to distribution 2 is the $1-p$ quantity.
+The parameters $\lambda_1$ and $\lambda_2$ refer to the average number of road accidents per road stretch for the first and second distribution respectively. The parameter $p$ is the proportion parameter. This represents the probability that a given observation belongs to distribution 1. Therefore, the probability that an observation belongs to distribution 2 is the $1-p$.
 
 ```{r poisson_mixture_fit}
 
@@ -330,14 +340,17 @@ mle_poismix <-
   method = "L-BFGS-B"
   )
 
-lambda_1_estimate <- mle_poismix$par[1]
-lambda_2_estimate <- mle_poismix$par[2]
-p_estimate <- mle_poismix$par[3]
+lambda_1_estimate <- round(mle_poismix$par[1],4)
+lambda_2_estimate <- round(mle_poismix$par[2],4)
+p_estimate <- round(mle_poismix$par[3],4)
 
-aic_poismix <- -2*mle_poismix$value + 2*(3)
+aic_poismix <- round(-2*mle_poismix$value + 2*(3),2)
+
+bic_poismix <- round(-2*mle_poismix$value + log(n),2)
 
 
-data_frame(`Lamda 1 estimate`= lambda_1_estimate , `Lambda 2 estimate` = lambda_2_estimate, `Mixing Parameter p` = p_estimate, AIC = aic_poismix) %>% knitr::kable()
+data_frame(`$\\hat{\\lambda_1}$`= lambda_1_estimate , `$\\hat{\\lambda_2}$` = lambda_2_estimate, `Proportion p` = p_estimate, AIC = aic_poismix, BIC = bic_poismix) %>% knitr::kable(caption = "Poisson-Poisson MLE's & information metrics")
+
 
 
 
@@ -351,7 +364,7 @@ The Zero Inflated Poisson is also a finite mixture distribution. This model supp
 \begin{align*}
 p(x_{i}=0) &= \pi +(1-\pi )e^{{-\lambda }} \\
 \\
-p(x_{i} \neq 0)=(1-\pi ){\frac  {\lambda ^{{x_{i}}}e^{{-\lambda }}}{x_{i}!}},\qquad x_{i}\geq 1 \\
+p(x_{i} \neq 0) &=(1-\pi ){\frac  {\lambda ^{{x_{i}}}e^{{-\lambda }}}{x_{i}!}},\qquad x_{i}\geq 1 \\
 \\
 L(\lambda,\pi|x) &= L(\lambda,\pi |x = 0)L(\lambda,\pi|x \neq 0)
 \end{align*}
@@ -372,8 +385,8 @@ L(\lambda,\pi|x) &= \prod^{n}_{i=1} [\pi +(1-\pi )e^{{-\lambda }}]^{1 - I}[(1-\p
 l(\lambda,\pi|x) &= \sum^{n}_{i=1} \ln[(1-I)[\pi +(1-\pi )e^{{-\lambda }}] + I[(1-\pi ){\frac  {\lambda ^{{x_{i}}}e^{{-\lambda }}}{x_{i}!}}]]
 \end{align*}
 
-The parameter $\lambda$ is the average rate of accidents per road stretch. The parameter $\pi$ is the probability of extra zeroes in the data.
-MAYBE EXPLAIN THIS BETTER?
+The parameter $\lambda$ is the average rate of accidents per road stretch. The parameter $\pi$ is the probability of additional zeroes observed in our data. This mixture distribution has a mean of $(1-\pi)\lambda$ and variance $(1-\pi)\lambda(1+\pi\lambda)$. It is clear that the variation in this distribution is always greater than the average thus a good potential model to consider.
+
 
 ```{r zero_inflated_fit}
 
@@ -410,38 +423,70 @@ mle_zip <-
   method = "L-BFGS-B"
   )
 
-lambda_zip_estimate <- mle_zip$par[1]
-pi_zip_estimate <- mle_zip$par[2]
+lambda_zip_estimate <- round(mle_zip$par[1],4)
+pi_zip_estimate <- round(mle_zip$par[2],4)
 
-aic_zip <- -2*mle_zip$value + 2*(2)
+aic_zip <- round(-2*mle_zip$value + 2*(2),2)
 
-data_frame(`Lamda estimate`= lambda_zip_estimate , `Pi estimate` = pi_zip_estimate,  AIC = aic_zip) %>% knitr::kable()
+bic_zip <- round(-2*mle_zip$value + log(n),2)
+
+data_frame(`$\\hat{\\lambda}$`= lambda_zip_estimate , `$\\hat{\\pi}$` = pi_zip_estimate,  AIC = aic_zip, BIC = bic_zip) %>% 
+  knitr::kable(caption = "Zero inflated Poisson MLE's & information metrics")
 
 
 ```
-
-
-
 
 
 ##Model Selection
 
-The AIC results for each model are summarised below.
+The AIC and BIC results for each model are summarised below.
 
 ```{r aic_summary}
 
 aics <- c(aic_poisson,aic_negbinom,aic_poismix,aic_zip)
+bics <- c(bic_poisson,bic_negbinom,bic_poismix,bic_zip)
 model <- c("Poisson","Negative Binomial","Poisson Mixture","Zero Inflated Poisson")
 
 
-data_frame(Model = model, AIC = aics) %>% knitr::kable()
-
-
+data_frame(Model = model, AIC = aics,BIC = bics) %>% 
+  knitr::kable(format = "latex", 
+               caption = "Models fitted to accident data",
+               booktabs = T) %>% 
+  row_spec(2, bold = T)
 
 ```
 
 
-The Negative Binomial has the lowest AIC value at `r round(aic_negbinom,2)`. This implies that is the best fitting model when compared to the other three models. The goodness of the Negative Binomial fit will now be assessed further.
+The Negative Binomial has the lowest AIC and BIC value at `r round(aic_negbinom,2)` and `r round(bic_negbinom,2)` respectively. This implies that the Negative Binomial is the best fitting model when compared to the others. The goodness of fit will now be assessed further.
+
+```{r NegBin Likelihood vis}
+# #Here are some 3d plots from Birgits code - since r is a function of m it has no affect in the plots. But they still cool just take a soek to run
+# 
+# #m range for plotting
+# m_range_ll <- seq(1,20, length.out = 100) 
+# #r range for plotting
+# r_range_ll <- seq(0.01,2,length.out = 100)
+# 
+# #every combination - kinda like a kronecker product
+# pp <- expand.grid(x = m_range_ll, y = r_range_ll)
+# 
+# #loglike z range for plotting
+# z_range_ll <- numeric(length(pp$x))
+# for(i in 1:length(pp$x)){
+#   z_range_ll[i] <- calc_negbinom_loglik(pp[i,])
+# }
+# z_range_ll <- unlist(z_range_ll)
+# Z <- matrix(z_range_ll,nrow=100)
+# 
+# #Generate 3 dimensional plots
+# image(m_range_ll, r_range_ll, Z, col = heat.colors(30), 
+#         xlab = expression(mu), ylab = expression(sigma))     
+# 
+# contour(m_range_ll, r_range_ll, Z, add = F, nlevels = 30, 
+#         xlab = expression(mu), ylab = expression(sigma))
+# 
+# persp(m_range_ll,r_range_ll, Z, theta = 10, phi = 25)
+```
 
 
 ```{r best_model_fit}
@@ -523,11 +568,12 @@ chisq.test(filter(comparison_df,Type == "observed")$Frequency,filter(comparison_
 ```
 
 
-
-
 ##Profile Likelihood & Confidence Intervals
 
-INSERT LATEX HERE
+The profile likelihood is a techinque used to estimate the likelihood function of a single parameter when multiple parameters are estimated simultaenously. The profile likelihoods for the m and r parameters are calculated as follows:
+
+\begin{align*}
+\end{align*}
 
 ```{r profile_likelihood_m, fig.width= 5.5 , fig.height= 5.5}
 
@@ -674,15 +720,153 @@ data_frame(x = r_range, val = r_profile_loglik_values) %>%
 
 
 
+```
+
+It can be seen that the profile likelihood for the M parameter is somewhat quadratic , but this is clearly not the case for the R shape parameter. Therefore it would be inappropriate to use a Wilks Likelihood interval or Wald interval for the shape parameter. The direct likelihood interval should be used. However, the quadracity of the M parameter profile likelihood means that asymptotic intervals relying on quadracity could be used.
+
+### 
+
+### Wald Interval
+
+We can attain an interval for out Maximum Likelihood Estimates if we assume they have asymptotic normal distribution. This means $n\to\infty$ the estimates will be approximately normal with the following parameters.
+
+\begin{align*}
+\hat{r} & \stackrel{.}{\sim} N(r,I(\hat{r})^{-1}) \\ 
+\hat{m} & \stackrel{.}{\sim} N(m,I(\hat{m})^{-1})
+\end{align*}
+
+This means that we can form asymptotic confidence intervals for $m$ and $r$ know as a Wald interval. The advantages of this is it is simple to calculate provided you have a standard error estimate. Since the profile likelihood of the shape parameter r is not quadratic around the MLE, we shall avoid this type of interval and the Wilks Likelihood ratio interval. The direct likelihood interval shall be used instead.
+
+```{r Wald Interval estimation}
+
+
+#according to my maths this would give us the fisher info (sent a picture via whatsapp)
+fisher_info_m <- function(r,m){
+  
+  info <- (n*r*m*(m+r)+sum(x)*r-n*m*r*(r+r*m))/(m^2*(r+m)^2)
+  return(info)
+}
+
+
+
+se_m <- sqrt(fisher_info_m(r_estimate,m_estimate)^(-1))
+
+wald_m <- c(0,0)
+wald_m[1] <- m_estimate-1.96*se_m
+wald_m[2] <- m_estimate+1.96*se_m
+
+
+
+# Here is an example to get a SE from the hessian but im unsure how since our LL has one parameter...
+
+# fit<-optim(pars,li_func,control=list("fnscale"=-1),hessian=TRUE,...)
+# fisher_info<-solve(-fit$hessian)
+# prop_sigma<-sqrt(diag(fisher_info))
+# prop_sigma<-diag(prop_sigma)
+# upper<-fit$par+1.96*prop_sigma
+# lower<-fit$par-1.96*prop_sigma
+# interval<-data.frame(value=fit$par, upper=upper, lower=lower)
+
+```
+
+### Wilks Likelihood ratio 
+
+The Wilks Likelihood Ratio statistic is based on the deviance and is used to compare a certain parameter against the Maximum Likelihood estimate for that parameter. If the data come from a Normal distribution the following result is true, but if the likelihood is quadratic the following is asymptotically true.
+
+$$W = -2\text{log}R(\theta) \sim \chi^2_p$$
+
+```{r wilks_ratio_interval}
+
+
+#select all bounds which meet a cutoff,
+#done for m only
+
+#plug in mle values to get l(theta_hat)
+max_m_loglikelihood <- calc_negbinom_loglik_profile(m = m_estimate , r = r_estimate)
+
+fnct <- function(m, max_m_loglikelihood, cutoff = qchisq(.95,1)) {
+
+  # out <- #using function that i used to calculate joint MLE for m and R the only downside to this is that it is NOT taking in different shape parameters...check out the function
+  # optim(
+  # par = m,
+  # fn = calc_negbinom_loglik ,
+  # control = list(fnscale = -1),
+  # lower = 3,
+  # upper = 30 ,
+  # method = "L-BFGS-B"
+  # )
+  
+  f <- 2 * (max_m_loglikelihood - calc_negbinom_loglik_profile(m = m ,r =r_estimate)) - cutoff #this value should be zero for the constraints to be satisfied
+  #replcae qchisq() with a random gamma cutoff if necesary
+  
+}
+
+
+
+
+
+lower_bound_wilk_interval <- uniroot(fnct, c(1, m_estimate) , max_m_loglikelihood = max_m_loglikelihood)
+upper_bound_wilk_interval <- uniroot(fnct, c(m_estimate, 52) , max_m_loglikelihood = max_m_loglikelihood)
+
+wilks_likelihood <- c(lower_bound_wilk_interval$root,upper_bound_wilk_interval$root)
+
 
 
 
 ```
 
-It can be seen that the profile likelihood for the M parameter is somewhat quadratic , but this is clearly not the case for the R shape parameter. Therefore it would be inappropriate to use a Wilks Likelihood interval or Wald interval for the shape parameter. The direct likelihood interval should be used. However, the quadracity of the M parameter profile likelihood means that asymptotic intervals relying on quadracity could be used.
+
+
+
+
+### Pure Likelihood Interval
+
+The likelihood interval can be found as $R(\theta) > \gamma^p$, where $\gamma$ can be based on a $\chi^2$ approximation and $p$ is the dimension of $\theta$. Equivalently we can use the deviance: 
+
+$$ -2[\ell(\theta_p) - \ell(\hat{\theta_p})] \sim \chi^2_p. $$ We solve for points of $\theta$ where the deviance equals the 95th percentile of $\chi^2_p$. 
+
+```{r}
+
+
+
+fnct_direct <- function(m, max_m_loglikelihood, gamma = 0.15) {
+
+  # out <- #using function that i used to calculate joint MLE for m and R the only downside to this is that it is NOT taking in different shape parameters...check out the function
+  # optim(
+  # par = m,
+  # fn = calc_negbinom_loglik ,
+  # control = list(fnscale = -1),
+  # lower = 3,
+  # upper = 30 ,
+  # method = "L-BFGS-B"
+  # )
+  
+  f <-  (max_m_loglikelihood - calc_negbinom_loglik_profile(m = m ,r =r_estimate)) - log(gamma) #this value should be zero for the constraints to be satisfied
+  #replcae qchisq() with a random gamma cutoff if necesary
+  
+}
+
+
+
+#here is an example of how to do direct likelihood for M
+
+lower_bound_direct_interval_m <- uniroot(fnct_direct, c(1, m_estimate) , max_m_loglikelihood = max_m_loglikelihood , gamma = 0.15 )
+upper_bound_direct_interval_m <- uniroot(fnct_direct, c(m_estimate, 52) , max_m_loglikelihood = max_m_loglikelihood , gamma = 0.15)
+```
+
+If the assumption of multivariate normality (likelihood is quadratic in all dimensions) is not met, it is better to use the likelihood function. For a likelihood interval we would choose all $\theta$ where 
+
+
+
+where $p$ is the dimension of $\theta$. This is equive to all values of $\theta$ where 
+
+$$\ell(\theta) > \ell(\hat{\theta}) + p \log(\gamma)$$
+
 
 
 #Results 
+
+
 
 #Conclusion
 

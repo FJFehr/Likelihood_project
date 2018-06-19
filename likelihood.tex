@@ -158,11 +158,12 @@
 
 \begin{abstract}
 \small{
-This project will explore the Accidents dataset and try fit a Poisson,
-Negative Binomial, Mixture of 2 Poissons and zero inflated Poisson
-models to the data. The model with the strongest support will be chosen
-and discussed. Profile likelihoods and confidence intervals for the
-parameters will be found and displayed of the chosen model.
+This project will explore the Accidents dataset. Various count models
+such as Poisson, Negative Binomial, Mixture of 2 Poissons and Zero
+Inflated Poisson models will be applied to the data. The model with the
+strongest support will be chosen and discussed. Profile likelihoods and
+confidence intervals for the parameters will be found and displayed for
+the chosen model.
 }
 \end{abstract}
 
@@ -170,7 +171,7 @@ parameters will be found and displayed of the chosen model.
 
 \begin{keyword}
 \footnotesize{
-Likelihood \sep Overdispersion \sep Soek \\ \vspace{0.3cm}
+Likelihood \sep Overdispersion \sep Count data \\ \vspace{0.3cm}
 \textit{JEL classification} 
 }
 \end{keyword}
@@ -207,12 +208,12 @@ number of accidents on two-lane (same direction) road segments in Cape
 Town over a five-year period. The segments differ in length between 0.2
 and 7.2 km. The aim of the report is to find and fit a model which
 accurately describes the accident dataset. This report will first
-explore the data then fit different adequate distributions and choose
-the most appropriate one. Once a model has been selected the profile
-likelihood and confidence intervals will be programmed and calculated
-from from first principles. The results will then be analysed critically
-and conclusions will be made and consider further considerations in the
-study.
+explore the data then fit different count distributions. The best
+fitting model will then be chosen. Once a model has been selected, the
+profile likelihood and confidence intervals for the model parameters
+will be calculated. The results will then be analysed critically and
+conclusions will be made whilst suggesting further areas of
+investigation.
 
 \subsection{Exploratory data analysis}\label{exploratory-data-analysis}
 
@@ -564,6 +565,8 @@ interval should be used. However, the quadracity of the M parameter
 profile likelihood means that asymptotic intervals relying on quadracity
 could be used.
 
+\subsubsection{}\label{section}
+
 \subsubsection{Wald Interval}\label{wald-interval}
 
 We can attain an interval for out Maximum Likelihood Estimates if we
@@ -571,14 +574,26 @@ assume they have asymptotic normal distribution. This means
 \(n\to\infty\) the estimates will be approximately normal with the
 following parameters.
 
-\[ \hat{r} \stackrel{.}{\sim} N(r,I(r)^{-1}) \\ 
-\hat{m} \stackrel{.}{\sim} N(m,I(m)^{-1})\]
+\begin{align*}
+\hat{r} & \stackrel{.}{\sim} N(r,I(\hat{r})^{-1}) \\ 
+\hat{m} & \stackrel{.}{\sim} N(m,I(\hat{m})^{-1})
+\end{align*}
 
 This means that we can form asymptotic confidence intervals for \(m\)
 and \(r\) know as a Wald interval. The advantages of this is it is
 simple to calculate provide you have a standard error estimate.
 
 \subsubsection{Wilks Likelihood ratio}\label{wilks-likelihood-ratio}
+
+The Wilks Likelihood Ratio statistic is based on the deviance and is
+used to compare a certain parameter against the Maximum Likelihood
+estimate for that parameter. If the data come from a normal distribution
+the following result is true, but if the likelihood is quadratic the
+following is asymptotically true.
+
+\[W = 2\text{log}R(\theta) \sim \chi^2_p\]
+
+\subsubsection{Pure Likelihood Interval}\label{pure-likelihood-interval}
 
 The likelihood interval can be found as \(R(\theta) > \gamma^p\), where
 \(\gamma\) can be based on a \(\chi^2\) approximation and \(p\) is the
@@ -592,10 +607,8 @@ If the assumption of multivariate normality (likelihood is quadratic in
 all dimensions) is not met, it is better to use the likelihood function.
 For a likelihood interval we would choose all \(\theta\) where
 
-\[W = 2\text{log}R(\theta) \sim \chi^2_p\]
-
-where \(p\) is the dimension of \(\theta\). This translates to all
-values of \(\theta\) where
+where \(p\) is the dimension of \(\theta\). This is equive to all values
+of \(\theta\) where
 
 \[\ell(\theta) > \ell(\hat{\theta}) + p \log(\gamma)\]
 
