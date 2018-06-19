@@ -1,0 +1,964 @@
+---
+# IMPORTANT: Change settings here, but DO NOT change the spacing. 
+# Remove comments and add values where applicable. 
+# The descriptions below should be self-explanatory
+
+title: "Theory of Statistics \n Likelihood Assigment"
+#subtitle: "This will appear as Right Header"
+
+documentclass: "elsarticle"
+
+# Comment: ----- Follow this pattern for up to 5 authors
+Author1: "Sean Soutar STRSEA001"  # First Author
+Ref1: "UCT Statistics Honours, Cape Town, South Africa" # First Author's Affiliation
+Email1: "sean.soutar\\@gmail.com" # First Author's Email address
+
+Author2: "Fabio Fehr FHRFAB001"
+Ref2: "UCT Statistics Honours, Cape Town, South Africa"
+Email2: "FHRFAB001\\@myuct.ac.za"
+CommonAffiliation_12: FALSE # If Author 1 and 2 have a common affiliation. Works with _13, _23, etc.
+
+#Author3: "John Doe"
+#Email3: "JohnSmith\\@gmail.com"
+
+#CorrespAuthor_1: TRUE  # If corresponding author is author 3, e.g., use CorrespAuthor_3: TRUE
+
+keywords: "Likelihood \\sep Overdispersion \\sep Count data" # Use \\sep to separate
+JELCodes: ""
+
+# Comment: ----- Manage headers and footers:
+#BottomLFooter: $Title$
+#BottomCFooter:
+#TopLHeader: \leftmark # Adds section name at topleft. Remove comment to add it.
+BottomRFooter: "\\footnotesize Page \\thepage\\" # Add a '#' before this line to remove footer.
+addtoprule: TRUE
+addfootrule: TRUE               # Use if footers added. Add '#' to remove line.
+
+# Setting page margins:
+margin: 2.3 # Sides
+bottom: 2 # bottom
+top: 2.5 # Top
+
+HardSet: TRUE # Hard-set the spacing of words in your document. This will stop LaTeX squashong text to fit on pages, e.g. This is done by hard-setting the spacing dimensions. Set to FALSE if you want LaTeX to optimize this for your paper. 
+bibliography: Tex/ref.bib       # Do not edit: Keep this naming convention and location.
+RemovePreprintSubmittedTo: TRUE  # Removes the 'preprint submitted to...' at bottom of titlepage
+Journal: "Journal of Finance"   # Journal that the paper will be submitting to, if RemovePreprintSubmittedTo is set to TRUE.
+toc: no                         # Add a table of contents
+numbersections: yes             # Should sections (and thus figures and tables) be numbered?
+fontsize: 11pt                  # Set fontsize
+linestretch: 1.2                # Set distance between lines.
+link-citations: TRUE            # This creates dynamic links to the papers in reference list.
+output:
+  pdf_document:
+    keep_tex: TRUE
+    template: Tex/TexDefault.txt
+    fig_width: 3.5 # Adjust default figure sizes. This can also be done in the chunks of the text.
+    fig_height: 3.5
+    include:
+      in_header: Tex/packages.txt # Reference file with extra packages
+abstract: |
+  This project will explore the Accidents dataset. Various count models such as Poisson, Negative Binomial, Mixture of 2 Poissons and Zero Inflated Poisson models will be applied to the data. The model with the strongest support will be chosen and discussed. Profile likelihoods and confidence intervals for the parameters will be found and displayed for the chosen model.
+---
+
+<!-- First: Set your default preferences for chunk options: -->
+
+<!-- If you want a chunk's code to be printed, set echo = TRUE. message = FALSE stops R printing ugly package loading details in your final paper too. I also suggest setting warning = FALSE and checking for warnings in R, else you might find ugly warnings in your paper. -->
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE, fig.width = 6, fig.height = 5, fig.pos="H", fig.pos = 'H')
+# Note: Include = FALSE implies the code is executed, but not printed in your pdf.
+# warning and message = FALSE implies ugly messages and warnings are removed from your pdf. These should be picked up when you execute the command chunks (code sections below) in your rmd, not printed in your paper!
+
+library(knitr)
+library(ggplot2)
+library(kableExtra)
+library(tidyverse)
+library(cowplot) #for plotting cows
+library(ZIM) #for generating observations
+library(fitdistrplus)
+library(jpeg)# for pulling in our likelihood surface
+# 
+# devtools::install_version("rmarkdown", version = "1.8", repos = "http://cran.us.r-project.org")
+
+
+dat <- read.csv("data/accidents.csv") %>% 
+  setNames(c("Index","Counts")) %>% 
+  as_data_frame() %>% 
+  mutate(Counts = as.numeric(Counts))
+
+#define usefule variables
+x <- dat$Counts
+n <- nrow(dat)
+
+```
+
+#Introduction
+
+This assignment is an explorative report on a dataset containing the number of accidents on two-lane (same direction) road segments in Cape Town over a five-year period. The segments differ in length between 0.2 and 7.2 km. The aim of the report is to find and fit a model which accurately describes the accident dataset. This report will first explore the data then fit different count distributions. The best fitting model will then be chosen. Once a model has been selected, the profile likelihood and confidence intervals for the model parameters will be calculated. The results will then be analysed critically and conclusions will be made whilst suggesting further areas of investigation.
+
+##Exploratory data analysis
+
+To better understand our data this report shall explore the following properties; Firstly we examine the type of data within the accidents dataset and discuss whether our data is discrete ordinal or continuous. After the symmetry of the data and bounds will be discussed. This leads the exploration to outliers and extreme values.
+
+```{r fig.height = 4,fig.width=6}
+
+#first column is just an index, second is a  1632 observations
+
+#first visualise the data
+
+
+  distribution_plot <- ggplot(dat, aes(Counts)) +
+  stat_count( fill="blue",
+                 alpha = .4,
+                 position="dodge")+
+  labs(x="Accident counts", y="Frequency" , title="Histogram\n Accident counts") +
+  theme_classic() +
+  theme(plot.title = element_text(hjust=0.5))
+
+firstbox <- ggplot(dat)+
+  geom_boxplot(aes(y= dat$Counts,x=1),
+               fill = "cornflowerblue", 
+               outlier.color ="firebrick")+
+  theme_classic() +
+  theme(plot.title = element_text(hjust=0.5))+
+  labs(title="Boxplot\n Accident counts") +
+  labs(y="Accident counts",x ="")+
+  coord_flip()
+
+plot_grid(distribution_plot,firstbox,ncol = 1)
+
+percentage_zero <- ((sum(dat$Counts==0)/nrow(dat))*100) %>% round(digits = 2)
+
+```
+
+### Data type \label{data_description}
+There are many instances where zero accidents were observed. This accounts for approximately `r percentage_zero`% of the data. This suggests that the zero-inflated Poisson should be considered as this proportion is much higher than what would be expected of a regular Poisson distribution. The accident counts are discrete random variables. Specifically, they are discrete positive definite random variables on the interval $R \in \{0;+ \infty\}$. 
+Summary statistics of the data are shown below.
+
+```{r summary_stat , fig.cap = "Summary Statistics of accident data \\label{summary_stats}"}
+
+summarize(.data = dat, Mean= round(mean(Counts),4), Variance = round(var(Counts),4), Median = median(Counts)) %>% knitr::kable(caption = "Summary statisitics")
+
+
+
+```
+
+In the Poisson distribution, the mean should equal the variance. The sample variance far exceeds the sample mean. This indicates overdispersion if the Poisson distribution were to be used. This is when the observations are more variable than what would be expected. This suggests that alternative count models and mixture distributions should be used. 
+
+
+### Symmetry
+This property is visually seen in the histogram and boxplot. All counts are greater than zero with a median value of 4 accidents. The largest accident observed is 70 accidents. THe histogram shows that the data are non-symetrical and positively skewed which is usually expected of count data.
+
+```{r}
+#percentage outliers - 3rd quartile is 9
+perc_outlier <- round(length(dat$Counts[dat$Counts > 1.5*9])/length(dat$Counts),4)*100
+```
+
+
+### Outliers
+From the boxplot it clear that many outliers exist. One common method of classifying a point as an extreme value or outlier is if it falls more than 1.5 times the inner-quartile range above the upper quartile. The proportion of outliers within our data set amount to `r perc_outlier`%.
+
+```{r}
+#five number summary of the data
+five_sum <- summary(dat)
+
+```
+
+
+#Methods 
+
+##Model Formulation
+
+The data is discrete, asymmetric, positive definite, contains many positive outliers and many zeros. This would suggest distributions such as Poisson, Negative Binomial, mixture distribution of 2 Poissons and a zero inflated Poisson. For all optimisation we shall constrain the bounds in order to ensure valid regions for our parameters. The best fitting distribution will be reparametised to aid interpretation and make the likelihood overal more quadratic.
+
+## Akiake Information Coefficient (AIC)
+
+The AIC metric can be used to compare models from different families of distributions. They can be used to compare relative goodness of fit between models. Overfitting the model with too many parameter is penalised by an increased AIC, thus a lower AIC value indicates a better fitting model.
+
+\begin{align*}
+\text{AIC} &= -2l(\hat{\theta}) + 2\text{p} \\
+p &= \text{Number of estimated parameters}
+\end{align*}
+
+## Bayesian Information Criterion (BIC)
+
+This metric, like AIC, also compares relative goodness of fit between models but penalises complex models when the sample size is large. BIC tends to produce simpler models than AIC.
+
+\begin{align*}
+\text{BIC} &= -2l(\hat{\theta}) + log(n) \\
+n &= \text{Number of observations}
+\end{align*}
+
+## Model Distributions
+
+###Poisson 
+
+The Poisson is a discrete probability distribution that expresses the probability of a given number of events occurring in a fixed interval of time if these events occur with a known constant rate and independently of the time since the last event.This is typically used in count data where your mean and variance are equal.
+
+\begin{align*} 
+p(x) & =  \frac{e^{-\lambda} \lambda^x}{x!},\ \ x\in \{0,1,\ldots,\infty\},\lambda>0 \\
+\\
+L(\lambda|x) & = \prod_{i=1}^n p(x_i) \\
+\\
+L(\lambda|x) & =\dfrac{e^{-n\lambda}\lambda^{\sum_{i=1}^n x_i}}{\prod_{i=1}^n x_i!}\\
+\\
+l(\lambda|x) & =-n\lambda +  \left(\sum_{i=1}^n x_i\right)\ln \lambda - \sum_{i=1}^{n}\ln(x_i!)
+\end{align*}
+
+The Poisson is characterised by the $\lambda$ parameter which denotes the population average rate of event occurence. In this context it would be the average number of accidents per unit time frame. Due to the variance being far higher than our mean in our data we would expect that a Poisson distribution would not fit very well.
+
+```{r poisson_fit}
+
+#we can use mle to fit this
+mle_lambda <- round(sum(x)/n,4)
+
+loglik_poisson <- -n*mle_lambda + sum(x)*log(mle_lambda)  -sum(log(factorial(x)))
+
+aic_poisson <- round(-2*loglik_poisson + 2*(1),2)
+
+bic_poisson <- round(-2*loglik_poisson + log(n),2)
+
+data_frame(`$\\hat{\\lambda}$`= mle_lambda , AIC = aic_poisson, BIC = bic_poisson) %>% knitr::kable(caption = "Poisson MLE's & information metrics")
+
+```
+
+
+###Negative Binomial
+
+The Negative Binomial distribution is a discrete probability function of the number of successes in a sequence of independant and identitically distributed Bernoulli trials. The parameters $p$ & $r$ measure the probability of success in an individual trial and the number of successes until $r$ failures occure. The mean in a negative binomial is defined as $m={\frac{pr}{1-p}}$ thus we can reparamatize the distribution in terms of the mean parameter m and shape parameter $r$ such that $p={\frac{m}{m+r}}$ and $1-p={\frac{r}{m+r}}$. We can also manipulate the constant term as follows.
+
+\begin{align*}
+\binom{x+r-1}{x} &= {\frac {(x+r-1)(x+r-2)\dotsm (r)}{x!}} = {\frac {\Gamma(x+r)}{x!\,\Gamma (r)}}
+\end{align*}
+
+This gives us the negative binomial in the form
+
+\begin{align*} 
+p(x) & =  {\frac {\Gamma (r+x)}{x!\,\Gamma (r)}}\left({\frac {m}{r+m}}\right)^{x}\left({\frac {r}{r+m}}\right)^{r}\quad {\text{for }}x=0,1,2,\dotsc \\
+\\
+L(m,r|x) & = \prod_{i=1}^n p(x_i) \\
+\\
+L(m,r|x) & ={[\frac{1}{\Gamma (r)}]}^{n} \prod_{i=1}^{n}{\frac{\Gamma (r+x_i)}{x_{i}!}} (\frac{m}{r + m})^{\Sigma_{i=1}^n x_i} (\frac{r}{r + m})^{nr}   \\
+\\
+l(m,r|x) & = -n\ln[\Gamma (r)] + \sum^{n}_{i=1} \ln(\Gamma (r + x_i)) -\sum^{n}_{i=1}\ln x_i! + \sum^{n}_{i=1} x_{i} \ln (\frac{m}{r + m}) + nr \ln (\frac{r}{r + m})
+\end{align*}
+
+It is important to note that the variance of a Negative Binomial under this parameterisation is $m + \frac{m^2}{r}$ and always larger than our mean $m$. This would suggest a better fit than our Poisson model. Shape parameters are often regarded as nuisance parameters and do not play a meaningful role in maximising likelihood. Therefore, since we desire no under or over dispersion, we can express the shape parameter as a function of the mean parameter to be esimated and the sample variance.
+
+\begin{align*}
+Var(x) &= m + \frac{m^2}{r} \\
+\\
+r &= \frac{m^2}{Var(x) - m} \\
+\\
+\hat{r} &= \frac{\hat{m}^2}{S^2 - \hat{m}}
+\end{align*}
+
+```{r negative_binomial_fit}
+
+#https://en.wikipedia.org/wiki/Negative_binomial_distribution#Gamma%E2%80%93Poisson_mixture
+#use optim to optimise for r and m
+#r is a shape parameter so it doesnt really affect the loglikelihood much
+# we want mean = variance i think... therefore you can solve for r = m^2 /(sample variance  - m)
+#This is done by looking at birgit's notes and seeing that variance = m + m^2/r
+
+calc_negbinom_loglik <- function(par){
+  m <- par[1]
+  r <- m^2 /(var(x)-m)
+  
+  loglik <- -n*log(gamma(r)) + sum(log(gamma(r+x))) - sum(log(factorial(x))) + sum(x) * log(m/(m+r)) + n*r*log(r/(r+m))
+  
+  return(loglik)
+  
+}
+
+
+#If we maximise loglikelihood, we will be minimising AIC
+
+mle_negbinom <-
+  optim(
+  par = 1,
+  fn = calc_negbinom_loglik ,
+  control = list(fnscale = -1),
+  lower = 3,
+  upper = 30 ,
+  method = "L-BFGS-B"
+  )
+
+m_estimate <- round(mle_negbinom$par[1],4)
+r_estimate <- round(m_estimate^2 /(var(x)-m_estimate),4)
+
+aic_negbinom <- round(-2*mle_negbinom$value + 2*(2),2)
+
+bic_negbinom <- round(-2*mle_negbinom$value + log(n),2)
+
+
+data_frame(`Mean $\\hat{m}$`= m_estimate , `Shape $\\hat{r}$` = r_estimate, AIC = aic_negbinom, BIC = bic_negbinom) %>% knitr::kable(caption = "Negative Binomial MLE's & information metrics")
+
+```
+
+
+###Mixture of 2 Poissons
+
+A finite mixture distributon of two Poisson variables will now be explored. A possibly reason for the overdispersion is that the data are from two separate Poisson distributions. Since it is not known from which distribution that any given data point is from, presuming that the two distribution mixture is appropriate, an additional mixing proportion parameter $p$ needs to be estimated.
+
+
+\begin{align*} 
+p(x|\lambda_1,\lambda_2,p) & =  p\frac{e^{-\lambda_1} \lambda_1^x}{x!} + (1-p)\frac{e^{-\lambda_2} \lambda_2^x}{x!},\ \ x\in \{0,1,\ldots,\infty\},\lambda_1 , \lambda_2 , p >0 \\
+\\
+L(\lambda_1,\lambda_2,p|x) & = \prod_{i=1}^n p(x_i) \\
+\\
+L(\lambda_1,\lambda_2,p|x) & =  \prod_{i=1}^n p\frac{e^{-\lambda_1} \lambda_1^{x_i}}{x_i!} + (1-p)\frac{e^{-\lambda_2} \lambda_2^{x_i}}{x_i!} \\
+\\
+l(\lambda_1,\lambda_2,p|x) & \sum^n_{i=1} \ln [ p\frac{e^{-\lambda_1} \lambda_1^{x_i}}{x_i!} + (1-p)\frac{e^{-\lambda_2} \lambda_2^{x_i}}{x_i!} ]
+\end{align*}
+
+The parameters $\lambda_1$ and $\lambda_2$ refer to the average number of road accidents per road stretch for the first and second distribution respectively. The parameter $p$ is the proportion parameter. This represents the probability that a given observation belongs to distribution 1. Therefore, the probability that an observation belongs to distribution 2 is the $1-p$.
+
+```{r poisson_mixture_fit}
+
+
+calc_poissmix_loglik <- function(par){
+  lambda_1 <- par[1]
+  lambda_2 <- par[2]
+  p <- par[3]
+  
+  loglik <- sum(log(p * dpois(x = x, lambda = lambda_1) + (1-p)*dpois(x = x, lambda = lambda_2)))
+  
+  return(loglik)
+  
+}
+
+
+#If we maximise loglikelihood, we will be minimising AIC
+
+mle_poismix <-
+  optim(
+  par = c(25,10,0.5), 
+  fn = calc_poissmix_loglik ,
+  control = list(fnscale = -1), #maximise 
+  lower = c(0.1,0.1,0),
+  upper = c(100,100,1) ,
+  method = "L-BFGS-B"
+  )
+
+lambda_1_estimate <- round(mle_poismix$par[1],4)
+lambda_2_estimate <- round(mle_poismix$par[2],4)
+p_estimate <- round(mle_poismix$par[3],4)
+
+aic_poismix <- round(-2*mle_poismix$value + 2*(3),2)
+
+bic_poismix <- round(-2*mle_poismix$value + log(n),2)
+
+
+data_frame(`$\\hat{\\lambda_1}$`= lambda_1_estimate , `$\\hat{\\lambda_2}$` = lambda_2_estimate, `Proportion p` = p_estimate, AIC = aic_poismix, BIC = bic_poismix) %>% knitr::kable(caption = "Poisson-Poisson MLE's & information metrics")
+
+
+
+
+```
+
+
+###Zero inflated Poisson
+
+The Zero Inflated Poisson is also a finite mixture distribution. This model supposes that the data can come from two distributions. The one is a Zero Process and the other is a Poisson process that can only take on non-zero values. This model is useful if there are many zeroes in the data. This was seen to be the case as discussed in \ref{data_description}. The Zero Inflated Poisson is a piecewise defined distribution with different mass functions for predicting the probability that a given observation will be zero rather than non-zero.
+
+\begin{align*}
+p(x_{i}=0) &= \pi +(1-\pi )e^{{-\lambda }} \\
+\\
+p(x_{i} \neq 0) &=(1-\pi ){\frac  {\lambda ^{{x_{i}}}e^{{-\lambda }}}{x_{i}!}},\qquad x_{i}\geq 1 \\
+\\
+L(\lambda,\pi|x) &= L(\lambda,\pi |x = 0)L(\lambda,\pi|x \neq 0)
+\end{align*}
+
+An indicator variable $I$ is defined.
+\[ 
+I =\begin{cases} 
+      0 & x=0 \\
+      1 & x \neq 0
+   \end{cases}
+\]
+
+\begin{align*}
+L(\lambda,\pi|x) &= \prod^{n}_{i=1} p(x_{i}=0)^{1 - I}p(x_{i} \neq 0)^{I} \\
+\\
+L(\lambda,\pi|x) &= \prod^{n}_{i=1} [\pi +(1-\pi )e^{{-\lambda }}]^{1 - I}[(1-\pi ){\frac  {\lambda ^{{x_{i}}}e^{{-\lambda }}}{x_{i}!}}]^{I} \\
+\\
+l(\lambda,\pi|x) &= \sum^{n}_{i=1} \ln[(1-I)[\pi +(1-\pi )e^{{-\lambda }}] + I[(1-\pi ){\frac  {\lambda ^{{x_{i}}}e^{{-\lambda }}}{x_{i}!}}]]
+\end{align*}
+
+The parameter $\lambda$ is the average rate of accidents per road stretch. The parameter $\pi$ is the probability of additional zeroes observed in our data. This mixture distribution has a mean of $(1-\pi)\lambda$ and variance $(1-\pi)\lambda(1+\pi\lambda)$. It is clear that the variation in this distribution is always greater than the average thus a good potential model to consider.
+
+
+```{r zero_inflated_fit}
+
+
+calc_zip_loglik <- function(par){
+  lambda <- par[1]
+  pi <- par[2]
+  
+  #this for loop is slightly inefficient but it allows us to see what is happening
+  loglik <- 0
+  
+  for(j in x){
+    
+    indicator <- as.numeric(j > 0) #assign value 1 if greater than 0
+    
+    loglik <- loglik + log( (1 - indicator)*(pi + (1-pi)*exp(-lambda)) + indicator*((1-pi) * dpois(x = j , lambda = lambda))   )
+  }
+
+  
+  return(loglik)
+  
+}
+
+
+#If we maximise loglikelihood, we will be minimising AIC
+
+mle_zip <-
+  optim(
+  par = c(10,0.2), 
+  fn = calc_zip_loglik ,
+  control = list(fnscale = -1), #maximise 
+  lower = c(0.1,0),
+  upper = c(100,0.99999) ,
+  method = "L-BFGS-B"
+  )
+
+lambda_zip_estimate <- round(mle_zip$par[1],4)
+pi_zip_estimate <- round(mle_zip$par[2],4)
+
+aic_zip <- round(-2*mle_zip$value + 2*(2),2)
+
+bic_zip <- round(-2*mle_zip$value + log(n),2)
+
+data_frame(`$\\hat{\\lambda}$`= lambda_zip_estimate , `$\\hat{\\pi}$` = pi_zip_estimate,  AIC = aic_zip, BIC = bic_zip) %>% 
+  knitr::kable(caption = "Zero inflated Poisson MLE's & information metrics")
+
+
+```
+
+
+##Model Selection
+
+The AIC and BIC results for each model are summarised below.
+
+```{r aic_summary}
+
+aics <- c(aic_poisson,aic_negbinom,aic_poismix,aic_zip)
+bics <- c(bic_poisson,bic_negbinom,bic_poismix,bic_zip)
+model <- c("Poisson","Negative Binomial","Poisson Mixture","Zero Inflated Poisson")
+
+
+data_frame(Model = model, AIC = aics,BIC = bics) %>% 
+  knitr::kable(format = "latex", 
+               caption = "Models fitted to accident data",
+               booktabs = T) %>% 
+  row_spec(2, bold = T)
+
+```
+
+
+The Negative Binomial has the lowest AIC and BIC value at `r round(aic_negbinom,2)` and `r round(bic_negbinom,2)` respectively. This implies that the Negative Binomial is the best fitting model when compared to the others. The goodness of fit will now be assessed further. We start by examining the likelihood surface. Since the $r$ shape parameter is a function of the $m$ parameter for each $m$ there is an exact $r$ meaning that these parameters are highly correlated.
+
+```{r NegBin Likelihood vis}
+# #Here are some 3d plots from Birgits code - since r is a function of m it has no affect in the plots. But they still cool just take a soek to run
+# 
+# #m range for plotting
+# m_range_ll <- seq(1,20, length.out = 100)
+# #r range for plotting
+# r_range_ll <- seq(0.01,2,length.out = 100)
+# 
+# #every combination - kinda like a kronecker product
+# pp <- expand.grid(x = m_range_ll, y = r_range_ll)
+# 
+# #loglike z range for plotting
+# z_range_ll <- numeric(length(pp$x))
+# for(i in 1:length(pp$x)){
+#   z_range_ll[i] <- calc_negbinom_loglik(pp[i,])
+# }
+# z_range_ll <- unlist(z_range_ll)
+# Z <- matrix(z_range_ll,nrow=100)
+
+#Generate 3 dimensional plots
+#image(m_range_ll, r_range_ll, Z, col = heat.colors(30),
+#        xlab = expression(mu), ylab = expression(sigma))
+
+#contour(m_range_ll, r_range_ll, Z, add = F, nlevels = 30,
+#        xlab = expression(mu), ylab = expression(sigma))
+# 
+# #Saves plot
+# jpeg('rplot.jpg')
+# persp(m_range_ll,r_range_ll, Z, theta=20, phi=18, 
+#            col="lightblue",expand = 0.5,shade = 0.2,
+#            xlab="m values", ylab="r values", zlab="Likelihood")
+# dev.off()
+
+
+#read file
+img <- readJPEG("rplot.jpg",native = TRUE)
+if(exists("rasterImage")){
+      plot(1:2, type='n',axes = F,xlab = "",ylab = "",main = "Negative Binomial likelihood surface")
+      rasterImage(img,1,1,2,2)
+}
+```
+
+### Goodness of Fit
+
+We will now access the goodness of fit by first comparing the observed accident counts against the expected expected counts given a negative binomial distribution. This will then be used in the Pearson's Chi-Squared test and finally plotted using a quantile-quantile plot for the Negative Binomial.
+
+
+```{r best_model_fit,  fig.height = 4,fig.width=6}
+
+#overlay distributions
+
+#generate zip_predictions
+
+# generate_zip_prob <- function(lambda,pi,x){
+#   
+#   if(x == 0){
+#     return(pi + (1-pi)*exp(-lambda))
+#   }else{
+#     return((1-pi)*dpois(x=x,lambda=lambda))
+#     
+#   }
+#   
+# }
+
+
+generate_negbinom_prob <- function(m,r,x){
+  
+
+  (gamma(r + x))/(factorial(x)*gamma(r)) * (m/(m+r))^(x) * (r /(r+m))^(r)
+  
+}
+
+probs <- numeric(81)
+for (i in 0:80){
+  probs[i+1] <- generate_negbinom_prob(m = m_estimate , r = r_estimate , x=i)
+}
+
+#get expected frequencies
+
+expected_freq <- probs*n
+
+
+comparison_df <- table(dat$Counts) %>% 
+                 as_data_frame %>% 
+                 rename(accident_count = Var1,
+                        observed = n) %>% 
+                 mutate(expected = expected_freq[1:56],
+                        accident_count = as.numeric(accident_count)) %>%  #take only first 56 values
+                 gather(Type,`Frequency` ,c(observed,expected))
+
+ggplot(comparison_df, aes(x = accident_count , y = Frequency , fill = Type )) +
+  geom_bar( stat="identity",alpha = .8,
+          position="dodge") +
+  labs(x="Accident counts", y="Frequency" , title="Observed vs Expected Frequencies as per Negative Binomial") +
+  theme_classic() +
+  theme(plot.title = element_text(hjust=0.5))
+
+
+#qq plot
+
+
+
+
+#check if any of this is right
+
+fit_nbinom <- fitdist(data = x , method = "mle","nbinom")
+
+
+```
+
+As we can see the observed and expected accident counts seem to fit nicely except for first 5 counts where there is some dissanance. This could be due to the excess of zeros in the data. We will now construct a Pearson's Chi-Squared test with the following hypotheses.
+
+\begin{align*}
+H_0: & \text{The data is consistent with the Negative Binomial distribution.}\\
+H_1: & \text{The data is NOT consistent with the Negative Binomial distribution.} 
+\end{align*}
+
+```{r}
+chitest <- chisq.test(filter(comparison_df,Type == "observed")$Frequency,filter(comparison_df,Type != "observed")$Frequency)
+
+
+data_frame(`$\\chi^2$ Statistic`= chitest$statistic , `$\\chi^2$ DoF` = chitest$parameter,  "P-Value"= round(chitest$p.value,2)) %>% 
+  knitr::kable(caption = "Pearson's $\\chi^2$ Goodness of Fit test")
+
+```
+
+The goodness of fit test results in a significantly large p-value meaning that there is evidence to conclude that the data is consistant with the Negative Binomial distribution. We will now compare our sample distribution against a Negative Binomial in the form a a Quantile-Quantile plot.
+
+```{r qq_plot, fig.height = 4.5,fig.width=4.5}
+ggplot(data = dat, aes(sample =dat$Counts))+
+  geom_abline()+
+  stat_qq(distribution = stats::qnbinom,
+          dparams = list(r_estimate,mu = m_estimate),
+  col = "turquoise4", alpha=0.4)+
+  theme_classic() +
+  theme(plot.title = element_text(hjust=0.5))+
+  labs(title="Q-Q plot for Negative Binomial")
+
+```
+
+The plot is in agreement with the prior too goodness of fit evaluations thus it is reasonable to assume that our data follows a Negative Binomial distribution. We will now explore the parameters of our distribution.
+
+##Profile Likelihood & Confidence Intervals
+
+The profile likelihood is a techinque used to estimate the likelihood function of a single parameter when multiple parameters are estimated simultaenously. The profile likelihoods for the m and r parameters are calculated as follows:
+
+\begin{align*}
+\end{align*}
+
+```{r profile_likelihood_m, fig.width= 6 , fig.height= 4}
+
+
+#need to calulcate mle at EACH point
+
+m_range <- seq(1,56, by = 0.1) #values of m for profile m loglikelihood
+r_range <- seq(0.01,0.8 , by = 0.01)
+
+
+calc_negbinom_loglik_profile <- function(r,m){
+  
+  loglik <- -n*log(gamma(r)) + sum(log(gamma(r+x))) - sum(log(factorial(x))) + sum(x) * log(m/(m+r)) + n*r*log(r/(r+m))
+  
+  return(loglik)
+  
+}
+
+
+
+profile_likelihood_calc_mean <- function(){
+  
+  #Calculate profile for M by calculating mle for R at eacg value of M
+  
+  estimated_r_s <- numeric(length(m_range))
+  
+          for(i in seq_along(m_range)){
+            
+              mle_profile <- #find mle for r at each value of m
+                          optim(
+                          par = 1,
+                          m = m_range[i],
+                          fn = calc_negbinom_loglik_profile ,
+                          control = list(fnscale = -1),
+                          lower = 0.1,
+                          upper = 30 ,  # i presume shape cant take a ridiculous value like this
+                          method = "L-BFGS-B"
+          )
+          estimated_r_s[i] <- mle_profile$par
+            
+        }
+          
+  return(estimated_r_s)
+}
+
+estimated_r_values <- profile_likelihood_calc_mean()
+
+
+#For each r in estimated_r_values, sub in M from 1:56 and trace it 
+
+m_profile_loglik_values <- numeric(length(m_range))
+
+for (i in seq_along(estimated_r_values)){
+  
+  m_profile_loglik_values[i] <- calc_negbinom_loglik_profile(r = estimated_r_values[i], m = m_range[i])
+  
+  
+}
+
+
+data_frame(x = m_range, val = m_profile_loglik_values) %>% 
+    ggplot(aes(x=x,y=val))+
+    geom_point(size = 1) +
+   scale_x_continuous(breaks = seq(0,56,by=2)) +
+    geom_vline(xintercept = 6.9, col = "red", lty = "dashed") +
+    labs(x = "M parameter value", y = "Profile Loglikelihood" , title = "Profile Loglikelihood of M Parameter") +
+    theme_classic()
+
+
+
+#Now we do the profile loglikelihood for the r 
+
+
+
+
+
+
+
+
+```
+
+
+```{r profile_likelihood_r, fig.width= 6, fig.height= 4}
+
+
+#have to redfine function to allow for correct optimisation
+
+calc_negbinom_loglik_profile <- function(m,r){
+  
+  loglik <- -n*log(gamma(r)) + sum(log(gamma(r+x))) - sum(log(factorial(x))) + sum(x) * log(m/(m+r)) + n*r*log(r/(r+m))
+  
+  return(loglik)
+  
+}
+
+
+
+
+profile_likelihood_calc_shape <- function(){
+  
+  #Calculate profile for R by calculating mle for M at eacg value of R
+  
+  estimated_m_s <- numeric(length(r_range))
+  
+          for(i in seq_along(r_range)){
+            
+              mle_profile <- #find mle for r at each value of m
+                          optim(
+                          par = 1,
+                          r = r_range[i],
+                          fn = calc_negbinom_loglik_profile ,
+                          control = list(fnscale = -1),
+                          lower = 1,
+                          upper = 100 ,  
+                          method = "L-BFGS-B"
+          )
+          estimated_m_s[i] <- mle_profile$par
+            
+        }
+          
+  return(estimated_m_s)
+}
+
+estimated_m_values <- profile_likelihood_calc_shape() #all m values are the same, this make sense as m is the dude who will afect loglikelihood 
+
+
+r_profile_loglik_values <- numeric(length(r_range))
+
+for (i in seq_along(estimated_m_values)){
+  
+  r_profile_loglik_values[i] <- calc_negbinom_loglik_profile(m = estimated_m_values[i], r = r_range[i])
+  
+  
+}
+
+
+data_frame(x = r_range, val = r_profile_loglik_values) %>% 
+    ggplot(aes(x=x,y=val))+
+    geom_point(size = 1) +
+   scale_x_continuous(breaks = seq(0,0.8,by=0.05)) +
+    geom_vline(xintercept = 0.58, col = "red", lty = "dashed") +
+    labs(x = "R shape parameter value", y = "Profile Loglikelihood" , title = "Profile Loglikelihood of R Shape Parameter") +
+    theme_classic()
+
+
+
+```
+
+It can be seen that the profile likelihood for the $m$ parameter is somewhat quadratic around the MLE, but this is clearly not the case for the $r$ shape parameter. Therefore it would be inappropriate to use a Wilks Likelihood interval or Wald interval for the shape parameter. The direct likelihood interval should be used. However, the quadracity of the $m$ parameter profile likelihood can be further visualised through the score of the parameter. 
+
+```{r, fig.height = 4.5,fig.width=5.5}
+#I have calculated the score of M
+
+score_U <- function(m){
+  r <- m^2 /(var(x)-m)
+  u <- (sum(x)*r-n*m*r)/(m*(r+m))
+  return (u)
+}
+
+thetas <- seq(0.001,20,by = 0.1)
+score <- 0
+for(i in 1:length(thetas)){
+  score[i] <- score_U(thetas[i])
+}
+df <- as.data.frame(thetas,score)
+
+ggplot(df,aes(x = thetas,y = score))+
+  geom_line()+
+  geom_hline(yintercept = 0)+
+  geom_vline(xintercept = 6.9, col = "red", lty = "dashed")+
+  theme(plot.title = element_text(hjust=0.5))+
+  labs(title="Negative Binomial Score \n m parameter") +
+  labs(x="m", y="U(m)")
+  
+
+```
+
+As we can see, our score function for $m$ is linear meaning that our likelihood must be quadratic, further implying that the asymptotic intervals relying on quadracity could be used.
+
+### Wald Interval
+
+We can attain an interval for out Maximum Likelihood Estimates if we assume they have asymptotic normal distribution. This means $n\to\infty$ the estimates will be approximately normal with the following parameters.
+
+\begin{align*}
+\hat{m} & \stackrel{.}{\sim} N(m,I(\hat{m})^{-1})
+\end{align*}
+
+This means that we can form asymptotic confidence intervals for $m$ and $r$ know as a Wald interval. The advantages of this is it is simple to calculate provided you have a standard error estimate. Since the profile likelihood of the shape parameter r is not quadratic around the MLE, we shall avoid this type of interval and the Wilks Likelihood ratio interval. The direct likelihood interval shall be used instead.
+
+```{r Wald Interval estimation}
+
+
+#according to my maths this would give us the fisher info (sent a picture via whatsapp)
+fisher_info_m <- function(r,m){
+  
+  info <- (n*r*m*(m+r)+sum(x)*r-n*m*r*(r+r*m))/(m^2*(r+m)^2)
+  return(info)
+}
+
+
+
+se_m <- sqrt(fisher_info_m(r_estimate,m_estimate)^(-1))
+
+wald_m <- c(0,0)
+wald_m[1] <- m_estimate-1.96*se_m
+wald_m[2] <- m_estimate+1.96*se_m
+
+
+
+# Here is an example to get a SE from the hessian but im unsure how since our LL has one parameter...
+
+# fit<-optim(pars,li_func,control=list("fnscale"=-1),hessian=TRUE,...)
+# fisher_info<-solve(-fit$hessian)
+# prop_sigma<-sqrt(diag(fisher_info))
+# prop_sigma<-diag(prop_sigma)
+# upper<-fit$par+1.96*prop_sigma
+# lower<-fit$par-1.96*prop_sigma
+# interval<-data.frame(value=fit$par, upper=upper, lower=lower)
+
+data_frame('Lower bound'= wald_m[1] , 'Upper bound' = wald_m[2]) %>% knitr::kable(caption = "Wald interval for m parameter")
+
+```
+
+### Wilks Likelihood ratio 
+
+The Wilks Likelihood Ratio statistic is based on the deviance and is used to compare a certain parameter against the Maximum Likelihood estimate for that parameter. If the data come from a Normal distribution the following result is true, but if the likelihood is quadratic the following is asymptotically true.
+
+$$W = -2\text{log}R(\theta) \sim \chi^2_p$$
+
+```{r wilks_ratio_interval}
+
+
+#select all bounds which meet a cutoff,
+#done for m only
+
+#plug in mle values to get l(theta_hat)
+max_m_loglikelihood <- calc_negbinom_loglik_profile(m = m_estimate , r = r_estimate)
+
+fnct <- function(m, max_m_loglikelihood, cutoff = qchisq(.95,1)) {
+
+  # out <- #using function that i used to calculate joint MLE for m and R the only downside to this is that it is NOT taking in different shape parameters...check out the function
+  # optim(
+  # par = m,
+  # fn = calc_negbinom_loglik ,
+  # control = list(fnscale = -1),
+  # lower = 3,
+  # upper = 30 ,
+  # method = "L-BFGS-B"
+  # )
+  
+  f <- 2 * (max_m_loglikelihood - calc_negbinom_loglik_profile(m = m ,r =r_estimate)) - cutoff #this value should be zero for the constraints to be satisfied
+  #replcae qchisq() with a random gamma cutoff if necesary
+  
+}
+
+lower_bound_wilk_interval <- uniroot(fnct, c(1, m_estimate) , max_m_loglikelihood = max_m_loglikelihood)
+
+upper_bound_wilk_interval <- uniroot(fnct, c(m_estimate, 52) , max_m_loglikelihood = max_m_loglikelihood)
+
+wilks_likelihood <- c(lower_bound_wilk_interval$root,upper_bound_wilk_interval$root)
+
+data_frame('Lower bound'= wilks_likelihood[1] , 'Upper bound' = wilks_likelihood[2]) %>% knitr::kable(caption = "Wilks Likelihood interval for m parameter")
+
+```
+
+
+### Pure Likelihood Interval
+
+The likelihood interval can be found as $R(\theta) > \gamma^p$, where $\gamma$ can be based on a $\chi^2$ approximation and $p$ is the dimension of $\theta$. Equivalently we can use the deviance: 
+
+$$ -2[\ell(\theta_p) - \ell(\hat{\theta_p})] \sim \chi^2_p. $$ We solve for points of $\theta$ where the deviance equals the 95th percentile of $\chi^2_p$. 
+
+```{r,  fig.height =4,fig.width=4.5}
+#likelihood ratio Graph
+
+r_theta <- function(m){
+  diff <- exp(calc_negbinom_loglik(m)- calc_negbinom_loglik(m_estimate))
+  return(diff)
+}
+rthetas <- 0
+thetas <- seq(5,10,by = 0.1)
+for(i in 1:length(thetas)){
+  rthetas[i] <- r_theta(thetas[i])
+}
+df <- as.data.frame(thetas,rthetas)
+
+ggplot(df,aes(x = thetas,y = rthetas))+
+  geom_line()+
+  geom_hline(yintercept = 0.15, col = "red", lty = "dashed")+
+  theme(plot.title = element_text(hjust=0.5))+
+  labs(title="Relative Likelihood for Negative Binomial") +
+  labs(x="m", y="Relative Likelihood")
+  
+```
+
+
+```{r}
+
+fnct_direct <- function(m, max_m_loglikelihood, gamma = 0.15) {
+
+  # out <- #using function that i used to calculate joint MLE for m and R the only downside to this is that it is NOT taking in different shape parameters...check out the function
+  # optim(
+  # par = m,
+  # fn = calc_negbinom_loglik ,
+  # control = list(fnscale = -1),
+  # lower = 3,
+  # upper = 30 ,
+  # method = "L-BFGS-B"
+  # )
+  
+  f <-  (max_m_loglikelihood - calc_negbinom_loglik_profile(m = m ,r =r_estimate)) +2*log(gamma) #this value should be zero for the constraints to be satisfied
+  #replcae qchisq() with a random gamma cutoff if necesary
+  
+}
+
+#here is an example of how to do direct likelihood for M
+
+lower_bound_direct_interval_m <- uniroot(fnct_direct, c(1, m_estimate) , max_m_loglikelihood = max_m_loglikelihood)
+
+upper_bound_direct_interval_m <- uniroot(fnct_direct, c(m_estimate, 52) , max_m_loglikelihood = max_m_loglikelihood)
+
+direct_interval_m <- c(lower_bound_direct_interval_m$root,upper_bound_direct_interval_m$root)
+
+
+data_frame('Lower bound'= direct_interval_m[1] , 'Upper bound' = direct_interval_m[2]) %>% knitr::kable(caption = " interval for m parameter")
+
+```
+
+#Results 
+
+
+```{r intervals}
+
+
+intervals <- c("Wald Interval", "Wilks Likelihood","Direct Likelihood 15%")
+lowerIntervals <- c(wald_m[1], wilks_likelihood[1], direct_interval_m[1])
+upperIntervals <- c(wald_m[2], wilks_likelihood[2], direct_interval_m[2])
+
+data_frame(Intervals = intervals, "Lower Bound" = lowerIntervals, "Upper Bound"= upperIntervals) %>% 
+  knitr::kable(format = "latex", 
+               caption = "Intervals for m parameter",
+               booktabs = T)
+
+```
+
+
+
+#Conclusion
+
+-What are the next steps and how can we improve the models
+
+<!-- Make title of bibliography here: -->
+<!-- \newpage -->
+# References  
