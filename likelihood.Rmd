@@ -76,6 +76,7 @@ library(tidyverse)
 library(cowplot) #for plotting cows
 library(ZIM) #for generating observations
 library(fitdistrplus)
+library(jpeg)# for pulling in our likelihood surface
 # 
 # devtools::install_version("rmarkdown", version = "1.8", repos = "http://cran.us.r-project.org")
 
@@ -99,7 +100,7 @@ This assignment is an explorative report on a dataset containing the number of a
 
 To better understand our data this report shall explore the following properties; Firstly we examine the type of data within the accidents dataset and discuss whether our data is discrete ordinal or continuous. After the symmetry of the data and bounds will be discussed. This leads the exploration to outliers and extreme values.
 
-```{r fig.height = 6}
+```{r fig.height = 4,fig.width=6}
 
 #first column is just an index, second is a  1632 observations
 
@@ -168,7 +169,7 @@ five_sum <- summary(dat)
 
 ##Model Formulation
 
-The data is discrete, asymmetric, positive definite, contains many positive outliers and many zeros. This would suggest distributions such as Poisson, Negative Binomial, mixture distribution of 2 Poissons and a zero inflated Poisson. 
+The data is discrete, asymmetric, positive definite, contains many positive outliers and many zeros. This would suggest distributions such as Poisson, Negative Binomial, mixture distribution of 2 Poissons and a zero inflated Poisson. For all optimisation we shall constrain the bounds in order to ensure valid regions for our parameters. The best fitting distribution will be reparametised to aid interpretation and make the likelihood overal more quadratic.
 
 ## Akiake Information Coefficient (AIC)
 
@@ -457,13 +458,13 @@ data_frame(Model = model, AIC = aics,BIC = bics) %>%
 ```
 
 
-The Negative Binomial has the lowest AIC and BIC value at `r round(aic_negbinom,2)` and `r round(bic_negbinom,2)` respectively. This implies that the Negative Binomial is the best fitting model when compared to the others. The goodness of fit will now be assessed further.
+The Negative Binomial has the lowest AIC and BIC value at `r round(aic_negbinom,2)` and `r round(bic_negbinom,2)` respectively. This implies that the Negative Binomial is the best fitting model when compared to the others. The goodness of fit will now be assessed further. We start by examining the likelihood surface. Since the $r$ shape parameter is a function of the $m$ parameter for each $m$ there is an exact $r$ meaning that these parameters are highly correlated.
 
 ```{r NegBin Likelihood vis}
 # #Here are some 3d plots from Birgits code - since r is a function of m it has no affect in the plots. But they still cool just take a soek to run
 # 
 # #m range for plotting
-# m_range_ll <- seq(1,20, length.out = 100) 
+# m_range_ll <- seq(1,20, length.out = 100)
 # #r range for plotting
 # r_range_ll <- seq(0.01,2,length.out = 100)
 # 
@@ -477,19 +478,36 @@ The Negative Binomial has the lowest AIC and BIC value at `r round(aic_negbinom,
 # }
 # z_range_ll <- unlist(z_range_ll)
 # Z <- matrix(z_range_ll,nrow=100)
+
+#Generate 3 dimensional plots
+#image(m_range_ll, r_range_ll, Z, col = heat.colors(30),
+#        xlab = expression(mu), ylab = expression(sigma))
+
+#contour(m_range_ll, r_range_ll, Z, add = F, nlevels = 30,
+#        xlab = expression(mu), ylab = expression(sigma))
 # 
-# #Generate 3 dimensional plots
-# image(m_range_ll, r_range_ll, Z, col = heat.colors(30), 
-#         xlab = expression(mu), ylab = expression(sigma))     
-# 
-# contour(m_range_ll, r_range_ll, Z, add = F, nlevels = 30, 
-#         xlab = expression(mu), ylab = expression(sigma))
-# 
-# persp(m_range_ll,r_range_ll, Z, theta = 10, phi = 25)
+# #Saves plot
+# jpeg('rplot.jpg')
+# persp(m_range_ll,r_range_ll, Z, theta=20, phi=18, 
+#            col="lightblue",expand = 0.5,shade = 0.2,
+#            xlab="m values", ylab="r values", zlab="Likelihood")
+# dev.off()
+
+
+#read file
+img <- readJPEG("rplot.jpg",native = TRUE)
+if(exists("rasterImage")){
+      plot(1:2, type='n',axes = F,xlab = "",ylab = "",main = "Negative Binomial likelihood surface")
+      rasterImage(img,1,1,2,2)
+}
 ```
 
+### Goodness of Fit
 
-```{r best_model_fit}
+We will now access the goodness of fit by first comparing the observed accident counts against the expected expected counts given a negative binomial distribution. This will then be used in the Pearson's Chi-Squared test and finally plotted using a quantile-quantile plot for the Negative Binomial.
+
+
+```{r best_model_fit,  fig.height = 4,fig.width=6}
 
 #overlay distributions
 
@@ -549,24 +567,40 @@ ggplot(comparison_df, aes(x = accident_count , y = Frequency , fill = Type )) +
 
 fit_nbinom <- fitdist(data = x , method = "mle","nbinom")
 
-# q-q
-
-
 
 ```
 
+As we can see the observed and expected accident counts seem to fit nicely except for first 5 counts where there is some dissanance. This could be due to the excess of zeros in the data. We will now construct a Pearson's Chi-Squared test with the following hypotheses.
 
-```{r qq_plot}
+\begin{align*}
+H_0: & \text{The data is consistent with the Negative Binomial distribution.}\\
+H_1: & \text{The data is NOT consistent with the Negative Binomial distribution.} 
+\end{align*}
+
+```{r}
+chitest <- chisq.test(filter(comparison_df,Type == "observed")$Frequency,filter(comparison_df,Type != "observed")$Frequency)
 
 
-fitdistrplus::qqcomp(fit_nbinom,addlegend = F, main = "Q-Q plot for Negative Binomial")
-
-
-chisq.test(filter(comparison_df,Type == "observed")$Frequency,filter(comparison_df,Type != "observed")$Frequency)
-
+data_frame(`$\\chi^2$ Statistic`= chitest$statistic , `$\\chi^2$ DoF` = chitest$parameter,  "P-Value"= round(chitest$p.value,2)) %>% 
+  knitr::kable(caption = "Pearson's $\\chi^2$ Goodness of Fit test")
 
 ```
 
+The goodness of fit test results in a significantly large p-value meaning that there is evidence to conclude that the data is consistant with the Negative Binomial distribution. We will now compare our sample distribution against a Negative Binomial in the form a a Quantile-Quantile plot.
+
+```{r qq_plot, fig.height = 4.5,fig.width=4.5}
+ggplot(data = dat, aes(sample =dat$Counts))+
+  geom_abline()+
+  stat_qq(distribution = stats::qnbinom,
+          dparams = list(r_estimate,mu = m_estimate),
+  col = "turquoise4", alpha=0.4)+
+  theme_classic() +
+  theme(plot.title = element_text(hjust=0.5))+
+  labs(title="Q-Q plot for Negative Binomial")
+
+```
+
+The plot is in agreement with the prior too goodness of fit evaluations thus it is reasonable to assume that our data follows a Negative Binomial distribution. We will now explore the parameters of our distribution.
 
 ##Profile Likelihood & Confidence Intervals
 
@@ -575,7 +609,7 @@ The profile likelihood is a techinque used to estimate the likelihood function o
 \begin{align*}
 \end{align*}
 
-```{r profile_likelihood_m, fig.width= 5.5 , fig.height= 5.5}
+```{r profile_likelihood_m, fig.width= 6 , fig.height= 4}
 
 
 #need to calulcate mle at EACH point
@@ -656,7 +690,7 @@ data_frame(x = m_range, val = m_profile_loglik_values) %>%
 ```
 
 
-```{r profile_likelihood_r}
+```{r profile_likelihood_r, fig.width= 6, fig.height= 4}
 
 
 #have to redfine function to allow for correct optimisation
@@ -722,16 +756,42 @@ data_frame(x = r_range, val = r_profile_loglik_values) %>%
 
 ```
 
-It can be seen that the profile likelihood for the M parameter is somewhat quadratic , but this is clearly not the case for the R shape parameter. Therefore it would be inappropriate to use a Wilks Likelihood interval or Wald interval for the shape parameter. The direct likelihood interval should be used. However, the quadracity of the M parameter profile likelihood means that asymptotic intervals relying on quadracity could be used.
+It can be seen that the profile likelihood for the $m$ parameter is somewhat quadratic around the MLE, but this is clearly not the case for the $r$ shape parameter. Therefore it would be inappropriate to use a Wilks Likelihood interval or Wald interval for the shape parameter. The direct likelihood interval should be used. However, the quadracity of the $m$ parameter profile likelihood can be further visualised through the score of the parameter. 
 
-### 
+```{r, fig.height = 4.5,fig.width=5.5}
+#I have calculated the score of M
+
+score_U <- function(m){
+  r <- m^2 /(var(x)-m)
+  u <- (sum(x)*r-n*m*r)/(m*(r+m))
+  return (u)
+}
+
+thetas <- seq(0.001,20,by = 0.1)
+score <- 0
+for(i in 1:length(thetas)){
+  score[i] <- score_U(thetas[i])
+}
+df <- as.data.frame(thetas,score)
+
+ggplot(df,aes(x = thetas,y = score))+
+  geom_line()+
+  geom_hline(yintercept = 0)+
+  geom_vline(xintercept = 6.9, col = "red", lty = "dashed")+
+  theme(plot.title = element_text(hjust=0.5))+
+  labs(title="Negative Binomial Score \n m parameter") +
+  labs(x="m", y="U(m)")
+  
+
+```
+
+As we can see, our score function for $m$ is linear meaning that our likelihood must be quadratic, further implying that the asymptotic intervals relying on quadracity could be used.
 
 ### Wald Interval
 
 We can attain an interval for out Maximum Likelihood Estimates if we assume they have asymptotic normal distribution. This means $n\to\infty$ the estimates will be approximately normal with the following parameters.
 
 \begin{align*}
-\hat{r} & \stackrel{.}{\sim} N(r,I(\hat{r})^{-1}) \\ 
 \hat{m} & \stackrel{.}{\sim} N(m,I(\hat{m})^{-1})
 \end{align*}
 
@@ -767,6 +827,8 @@ wald_m[2] <- m_estimate+1.96*se_m
 # lower<-fit$par-1.96*prop_sigma
 # interval<-data.frame(value=fit$par, upper=upper, lower=lower)
 
+data_frame('Lower bound'= wald_m[1] , 'Upper bound' = wald_m[2]) %>% knitr::kable(caption = "Wald interval for m parameter")
+
 ```
 
 ### Wilks Likelihood ratio 
@@ -801,22 +863,15 @@ fnct <- function(m, max_m_loglikelihood, cutoff = qchisq(.95,1)) {
   
 }
 
-
-
-
-
 lower_bound_wilk_interval <- uniroot(fnct, c(1, m_estimate) , max_m_loglikelihood = max_m_loglikelihood)
+
 upper_bound_wilk_interval <- uniroot(fnct, c(m_estimate, 52) , max_m_loglikelihood = max_m_loglikelihood)
 
 wilks_likelihood <- c(lower_bound_wilk_interval$root,upper_bound_wilk_interval$root)
 
-
-
+data_frame('Lower bound'= wilks_likelihood[1] , 'Upper bound' = wilks_likelihood[2]) %>% knitr::kable(caption = "Wilks Likelihood interval for m parameter")
 
 ```
-
-
-
 
 
 ### Pure Likelihood Interval
@@ -825,9 +880,31 @@ The likelihood interval can be found as $R(\theta) > \gamma^p$, where $\gamma$ c
 
 $$ -2[\ell(\theta_p) - \ell(\hat{\theta_p})] \sim \chi^2_p. $$ We solve for points of $\theta$ where the deviance equals the 95th percentile of $\chi^2_p$. 
 
+```{r,  fig.height =4,fig.width=4.5}
+#likelihood ratio Graph
+
+r_theta <- function(m){
+  diff <- exp(calc_negbinom_loglik(m)- calc_negbinom_loglik(m_estimate))
+  return(diff)
+}
+rthetas <- 0
+thetas <- seq(5,10,by = 0.1)
+for(i in 1:length(thetas)){
+  rthetas[i] <- r_theta(thetas[i])
+}
+df <- as.data.frame(thetas,rthetas)
+
+ggplot(df,aes(x = thetas,y = rthetas))+
+  geom_line()+
+  geom_hline(yintercept = 0.15, col = "red", lty = "dashed")+
+  theme(plot.title = element_text(hjust=0.5))+
+  labs(title="Relative Likelihood for Negative Binomial") +
+  labs(x="m", y="Relative Likelihood")
+  
+```
+
+
 ```{r}
-
-
 
 fnct_direct <- function(m, max_m_loglikelihood, gamma = 0.15) {
 
@@ -841,30 +918,40 @@ fnct_direct <- function(m, max_m_loglikelihood, gamma = 0.15) {
   # method = "L-BFGS-B"
   # )
   
-  f <-  (max_m_loglikelihood - calc_negbinom_loglik_profile(m = m ,r =r_estimate)) - log(gamma) #this value should be zero for the constraints to be satisfied
+  f <-  (max_m_loglikelihood - calc_negbinom_loglik_profile(m = m ,r =r_estimate)) +2*log(gamma) #this value should be zero for the constraints to be satisfied
   #replcae qchisq() with a random gamma cutoff if necesary
   
 }
 
-
-
 #here is an example of how to do direct likelihood for M
 
-lower_bound_direct_interval_m <- uniroot(fnct_direct, c(1, m_estimate) , max_m_loglikelihood = max_m_loglikelihood , gamma = 0.15 )
-upper_bound_direct_interval_m <- uniroot(fnct_direct, c(m_estimate, 52) , max_m_loglikelihood = max_m_loglikelihood , gamma = 0.15)
+lower_bound_direct_interval_m <- uniroot(fnct_direct, c(1, m_estimate) , max_m_loglikelihood = max_m_loglikelihood)
+
+upper_bound_direct_interval_m <- uniroot(fnct_direct, c(m_estimate, 52) , max_m_loglikelihood = max_m_loglikelihood)
+
+direct_interval_m <- c(lower_bound_direct_interval_m$root,upper_bound_direct_interval_m$root)
+
+
+data_frame('Lower bound'= direct_interval_m[1] , 'Upper bound' = direct_interval_m[2]) %>% knitr::kable(caption = " interval for m parameter")
+
 ```
 
-If the assumption of multivariate normality (likelihood is quadratic in all dimensions) is not met, it is better to use the likelihood function. For a likelihood interval we would choose all $\theta$ where 
-
-
-
-where $p$ is the dimension of $\theta$. This is equive to all values of $\theta$ where 
-
-$$\ell(\theta) > \ell(\hat{\theta}) + p \log(\gamma)$$
-
-
-
 #Results 
+
+
+```{r intervals}
+
+
+intervals <- c("Wald Interval", "Wilks Likelihood","Direct Likelihood 15%")
+lowerIntervals <- c(wald_m[1], wilks_likelihood[1], direct_interval_m[1])
+upperIntervals <- c(wald_m[2], wilks_likelihood[2], direct_interval_m[2])
+
+data_frame(Intervals = intervals, "Lower Bound" = lowerIntervals, "Upper Bound"= upperIntervals) %>% 
+  knitr::kable(format = "latex", 
+               caption = "Intervals for m parameter",
+               booktabs = T)
+
+```
 
 
 

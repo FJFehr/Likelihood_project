@@ -280,7 +280,10 @@ proportion of outliers within our data set amount to 15.26\%.
 The data is discrete, asymmetric, positive definite, contains many
 positive outliers and many zeros. This would suggest distributions such
 as Poisson, Negative Binomial, mixture distribution of 2 Poissons and a
-zero inflated Poisson.
+zero inflated Poisson. For all optimisation we shall constrain the
+bounds in order to ensure valid regions for our parameters. The best
+fitting distribution will be reparametised to aid interpretation and
+make the likelihood overal more quadratic.
 
 \subsection{Akiake Information Coefficient
 (AIC)}\label{akiake-information-coefficient-aic}
@@ -528,19 +531,59 @@ Zero Inflated Poisson & 15556.16 & 15559.56\\
 The Negative Binomial has the lowest AIC and BIC value at 9626.92 and
 9630.31 respectively. This implies that the Negative Binomial is the
 best fitting model when compared to the others. The goodness of fit will
-now be assessed further.
+now be assessed further. We start by examining the likelihood surface.
+Since the \(r\) shape parameter is a function of the \(m\) parameter for
+each \(m\) there is an exact \(r\) meaning that these parameters are
+highly correlated.
+
+\includegraphics{likelihood_files/figure-latex/NegBin Likelihood vis-1.pdf}
+
+\subsubsection{Goodness of Fit}\label{goodness-of-fit}
+
+We will now access the goodness of fit by first comparing the observed
+accident counts against the expected expected counts given a negative
+binomial distribution. This will then be used in the Pearson's
+Chi-Squared test and finally plotted using a quantile-quantile plot for
+the Negative Binomial.
 
 \includegraphics{likelihood_files/figure-latex/best_model_fit-1.pdf}
 
+As we can see the observed and expected accident counts seem to fit
+nicely except for first 5 counts where there is some dissanance. This
+could be due to the excess of zeros in the data. We will now construct a
+Pearson's Chi-Squared test with the following hypotheses.
+
+\begin{align*}
+H_0: & \text{The data is consistent with the Negative Binomial distribution.}\\
+H_1: & \text{The data is NOT consistent with the Negative Binomial distribution.} 
+\end{align*}
+
+\begin{longtable}[]{@{}rrr@{}}
+\caption{Pearson's \(\chi^2\) Goodness of Fit test}\tabularnewline
+\toprule
+\(\chi^2\) Statistic & \(\chi^2\) DoF & P-Value\tabularnewline
+\midrule
+\endfirsthead
+\toprule
+\(\chi^2\) Statistic & \(\chi^2\) DoF & P-Value\tabularnewline
+\midrule
+\endhead
+1456 & 1430 & 0.31\tabularnewline
+\bottomrule
+\end{longtable}
+
+The goodness of fit test results in a significantly large p-value
+meaning that there is evidence to conclude that the data is consistant
+with the Negative Binomial distribution. We will now compare our sample
+distribution against a Negative Binomial in the form a a
+Quantile-Quantile plot.
+
 \includegraphics{likelihood_files/figure-latex/qq_plot-1.pdf}
 
-\begin{verbatim}
-## 
-##  Pearson's Chi-squared test
-## 
-## data:  filter(comparison_df, Type == "observed")$Frequency and filter(comparison_df, Type != "observed")$Frequency
-## X-squared = 1456, df = 1430, p-value = 0.3101
-\end{verbatim}
+The plot is in agreement with the prior too goodness of fit evaluations
+thus it is reasonable to assume that our data follows a Negative
+Binomial distribution. We will now explore the parameters of our
+distribution.
 
 \subsection{Profile Likelihood \& Confidence
 Intervals}\label{profile-likelihood-confidence-intervals}
@@ -557,15 +600,19 @@ calculated as follows:
 
 \includegraphics{likelihood_files/figure-latex/profile_likelihood_r-1.pdf}
 
-It can be seen that the profile likelihood for the M parameter is
-somewhat quadratic , but this is clearly not the case for the R shape
-parameter. Therefore it would be inappropriate to use a Wilks Likelihood
-interval or Wald interval for the shape parameter. The direct likelihood
-interval should be used. However, the quadracity of the M parameter
-profile likelihood means that asymptotic intervals relying on quadracity
-could be used.
+It can be seen that the profile likelihood for the \(m\) parameter is
+somewhat quadratic around the MLE, but this is clearly not the case for
+the \(r\) shape parameter. Therefore it would be inappropriate to use a
+Wilks Likelihood interval or Wald interval for the shape parameter. The
+direct likelihood interval should be used. However, the quadracity of
+the \(m\) parameter profile likelihood can be further visualised through
+the score of the parameter.
 
-\subsubsection{}\label{section}
+\includegraphics{likelihood_files/figure-latex/unnamed-chunk-5-1.pdf}
+
+As we can see, our score function for \(m\) is linear meaning that our
+likelihood must be quadratic, further implying that the asymptotic
+intervals relying on quadracity could be used.
 
 \subsubsection{Wald Interval}\label{wald-interval}
 
@@ -575,23 +622,53 @@ assume they have asymptotic normal distribution. This means
 following parameters.
 
 \begin{align*}
-\hat{r} & \stackrel{.}{\sim} N(r,I(\hat{r})^{-1}) \\ 
 \hat{m} & \stackrel{.}{\sim} N(m,I(\hat{m})^{-1})
 \end{align*}
 
 This means that we can form asymptotic confidence intervals for \(m\)
 and \(r\) know as a Wald interval. The advantages of this is it is
-simple to calculate provide you have a standard error estimate.
+simple to calculate provided you have a standard error estimate. Since
+the profile likelihood of the shape parameter r is not quadratic around
+the MLE, we shall avoid this type of interval and the Wilks Likelihood
+ratio interval. The direct likelihood interval shall be used instead.
+
+\begin{longtable}[]{@{}rr@{}}
+\caption{Wald interval for m parameter}\tabularnewline
+\toprule
+Lower bound & Upper bound\tabularnewline
+\midrule
+\endfirsthead
+\toprule
+Lower bound & Upper bound\tabularnewline
+\midrule
+\endhead
+6.185339 & 7.436261\tabularnewline
+\bottomrule
+\end{longtable}
 
 \subsubsection{Wilks Likelihood ratio}\label{wilks-likelihood-ratio}
 
 The Wilks Likelihood Ratio statistic is based on the deviance and is
 used to compare a certain parameter against the Maximum Likelihood
-estimate for that parameter. If the data come from a normal distribution
+estimate for that parameter. If the data come from a Normal distribution
 the following result is true, but if the likelihood is quadratic the
 following is asymptotically true.
 
-\[W = 2\text{log}R(\theta) \sim \chi^2_p\]
+\[W = -2\text{log}R(\theta) \sim \chi^2_p\]
+
+\begin{longtable}[]{@{}rr@{}}
+\caption{Wilks Likelihood interval for m parameter}\tabularnewline
+\toprule
+Lower bound & Upper bound\tabularnewline
+\midrule
+\endfirsthead
+\toprule
+Lower bound & Upper bound\tabularnewline
+\midrule
+\endhead
+6.470434 & 7.405793\tabularnewline
+\bottomrule
+\end{longtable}
 
 \subsubsection{Pure Likelihood Interval}\label{pure-likelihood-interval}
 
@@ -603,23 +680,38 @@ dimension of \(\theta\). Equivalently we can use the deviance:
 for points of \(\theta\) where the deviance equals the 95th percentile
 of \(\chi^2_p\).
 
-If the assumption of multivariate normality (likelihood is quadratic in
-all dimensions) is not met, it is better to use the likelihood function.
-For a likelihood interval we would choose all \(\theta\) where
+\includegraphics{likelihood_files/figure-latex/unnamed-chunk-6-1.pdf}
 
-where \(p\) is the dimension of \(\theta\). This is equive to all values
-of \(\theta\) where
-
-\[\ell(\theta) > \ell(\hat{\theta}) + p \log(\gamma)\]
+\begin{longtable}[]{@{}rr@{}}
+\caption{interval for m parameter}\tabularnewline
+\toprule
+Lower bound & Upper bound\tabularnewline
+\midrule
+\endfirsthead
+\toprule
+Lower bound & Upper bound\tabularnewline
+\midrule
+\endhead
+6.307311 & 7.606275\tabularnewline
+\bottomrule
+\end{longtable}
 
 \section{Results}\label{results}
 
-\textless{}\textless{}\textless{}\textless{}\textless{}\textless{}\textless{}
-Updated upstream
+\begin{table}
 
-======= -Are parameter estimates correlated?
-\textgreater{}\textgreater{}\textgreater{}\textgreater{}\textgreater{}\textgreater{}\textgreater{}
-Stashed changes
+\caption{\label{tab:intervals}Intervals for m parameter}
+\centering
+\begin{tabular}[t]{lrr}
+\toprule
+Intervals & Lower Bound & Upper Bound\\
+\midrule
+Wald Interval & 6.185339 & 7.436261\\
+Wilks Likelihood & 6.470434 & 7.405793\\
+Direct Likelihood 15\% & 6.307311 & 7.606275\\
+\bottomrule
+\end{tabular}
+\end{table}
 
 \section{Conclusion}\label{conclusion}
 
