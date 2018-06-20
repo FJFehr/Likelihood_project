@@ -1,0 +1,23 @@
+"0","intervals <- c(""Wald Interval"", ""Wilks Likelihood"",""Direct Likelihood 15%"")"
+"0","lowerIntervals <- c(wald_m[1], wilks_likelihood[1], direct_interval_m[1])"
+"0","upperIntervals <- c(wald_m[2], wilks_likelihood[2], direct_interval_m[2])"
+"0","data_frame(Intervals = intervals, ""Lower Bound"" = lowerIntervals, ""Upper Bound""= upperIntervals) %>% "
+"0","  knitr::kable(format = ""latex"", "
+"0","               caption = ""Intervals for m parameter"","
+"0","               booktabs = T)"
+"1","\begin{table}
+
+\caption{\label{tab:}Intervals for m parameter}
+\centering
+\begin{tabular}[t]{lrr}
+\toprule
+Intervals & Lower Bound & Upper Bound\\
+\midrule
+Wald Interval & 6.185339 & 7.436261\\
+Wilks Likelihood & 6.586151 & 7.038553\\
+Direct Likelihood 15\% & 6.587527 & 7.037140\\
+\bottomrule
+\end{tabular}
+\end{table}"
+"1","
+"

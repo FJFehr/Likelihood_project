@@ -5,17 +5,17 @@
     "dirty" : false,
     "encoding" : "UTF-8",
     "folds" : "",
-    "hash" : "2301763243",
+    "hash" : "944812201",
     "id" : "DAD9A6D3",
-    "lastKnownWriteTime" : 1529486091,
-    "last_content_update" : 1529486091698,
+    "lastKnownWriteTime" : 1529507668,
+    "last_content_update" : 1529507668556,
     "path" : "~/Likelihood_project/likelihood.Rmd",
     "project_path" : "likelihood.Rmd",
     "properties" : {
-        "cursorPosition" : "960,106",
+        "cursorPosition" : "984,0",
         "docOutlineVisible" : "1",
-        "last_setup_crc32" : "3F1489319e49612b",
-        "scrollLine" : "943"
+        "last_setup_crc32" : "412CEB6D9e49612b",
+        "scrollLine" : "969"
     },
     "relative_order" : 1,
     "source_on_save" : false,

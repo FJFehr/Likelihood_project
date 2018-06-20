@@ -1,0 +1,3 @@
+"0","#qq plot"
+"0","#check if any of this is right"
+"0","fit_nbinom <- fitdist(data = x , method = ""mle"",""nbinom"")"

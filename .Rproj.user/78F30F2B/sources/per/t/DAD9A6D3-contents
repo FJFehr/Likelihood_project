@@ -281,7 +281,8 @@ mle_negbinom <-
   control = list(fnscale = -1),
   lower = 3,
   upper = 30 ,
-  method = "L-BFGS-B"
+  method = "L-BFGS-B",
+  hessian = T
   )
 
 m_estimate <- round(mle_negbinom$par[1],4)
@@ -299,7 +300,7 @@ data_frame(`Mean $\\hat{m}$`= m_estimate , `Shape $\\hat{r}$` = r_estimate, AIC 
 
 ###Mixture of 2 Poissons
 
-A finite mixture distributon of two Poisson variables will now be explored. A possibly reason for the overdispersion is that the data are from two separate Poisson distributions. Since it is not known from which distribution that any given data point is from, presuming that the two distribution mixture is appropriate, an additional mixing proportion parameter $p$ needs to be estimated.
+A finite mixture distributon of two Poisson variables will now be explored. A possible reason for the overdispersion is that the data are from two separate Poisson distributions. Since it is not known from which distribution that any given data point is from, presuming that the two distribution mixture is appropriate, an additional mixing proportion parameter $p$ needs to be estimated.
 
 
 \begin{align*} 
@@ -461,45 +462,78 @@ data_frame(Model = model, AIC = aics,BIC = bics) %>%
 The Negative Binomial has the lowest AIC and BIC value at `r round(aic_negbinom,2)` and `r round(bic_negbinom,2)` respectively. This implies that the Negative Binomial is the best fitting model when compared to the others. The goodness of fit will now be assessed further. We start by examining the likelihood surface. Since the $r$ shape parameter is a function of the $m$ parameter for each $m$ there is an exact $r$ meaning that these parameters are highly correlated.
 
 ```{r NegBin Likelihood vis}
-# #Here are some 3d plots from Birgits code - since r is a function of m it has no affect in the plots. But they still cool just take a soek to run
-# 
-# #m range for plotting
-# m_range_ll <- seq(1,20, length.out = 100)
-# #r range for plotting
-# r_range_ll <- seq(0.01,2,length.out = 100)
-# 
-# #every combination - kinda like a kronecker product
-# pp <- expand.grid(x = m_range_ll, y = r_range_ll)
-# 
-# #loglike z range for plotting
-# z_range_ll <- numeric(length(pp$x))
-# for(i in 1:length(pp$x)){
-#   z_range_ll[i] <- calc_negbinom_loglik(pp[i,])
-# }
-# z_range_ll <- unlist(z_range_ll)
-# Z <- matrix(z_range_ll,nrow=100)
+#Here are some 3d plots from Birgits code - since r is a function of m it has no affect in the plots. But they still cool just take a soek to run
+
+
+negbinom_loglik_plotting <- function(par){
+  m <- par[1]
+  r <- par[2]
+
+  loglik <- -n*log(gamma(r)) + sum(log(gamma(r+x))) - sum(log(factorial(x))) + sum(x) * log(m/(m+r)) + n*r*log(r/(r+m))
+
+  return(loglik)
+
+}
+
+#m range for plotting
+m_range_ll <- seq(1,20, length.out = 100)
+#r range for plotting
+r_range_ll <- seq(0.01,1,length.out = 100)
+
+#every combination - kinda like a kronecker product
+pp <- expand.grid(x = m_range_ll, y = r_range_ll)
+
+#loglike z range for plotting
+z_range_ll <- numeric(length(pp$x))
+
+for(i in 1:length(pp$x)){
+   z_range_ll[i] <- negbinom_loglik_plotting(pp[i,])
+ }
+
+z_range_ll <- unlist(z_range_ll)
+
+Z <- matrix(z_range_ll,nrow=100)
 
 #Generate 3 dimensional plots
-#image(m_range_ll, r_range_ll, Z, col = heat.colors(30),
-#        xlab = expression(mu), ylab = expression(sigma))
 
-#contour(m_range_ll, r_range_ll, Z, add = F, nlevels = 30,
-#        xlab = expression(mu), ylab = expression(sigma))
-# 
+cont_plot <- contour(m_range_ll, r_range_ll, Z, add = F, nlevels = 30,
+       xlab="m values", ylab="r values", zlab="Likelihood")
+
+persp_plot <- persp(m_range_ll,r_range_ll, Z, theta=-50, phi=15,
+         col="lightblue",expand = 0.5,shade = 0.2,
+         xlab="m values", ylab="r values", zlab="Likelihood")
+
+#This just prints out values, plots are drawn when the above variables are created
+#cont_plot
+#persp_plot
+
+
 # #Saves plot
-# jpeg('rplot.jpg')
-# persp(m_range_ll,r_range_ll, Z, theta=20, phi=18, 
-#            col="lightblue",expand = 0.5,shade = 0.2,
-#            xlab="m values", ylab="r values", zlab="Likelihood")
+# jpeg('contourplot.jpg')
+#   contour(m_range_ll, r_range_ll, Z, add = F, nlevels = 30,
+#        xlab="m values", ylab="r values", zlab="Likelihood")
 # dev.off()
+# 
+# jpeg('perspplot.jpg')
+#   persp(m_range_ll,r_range_ll, Z, theta=-50, phi=15,
+#          col="lightblue",expand = 0.5,shade = 0.2,
+#          xlab="m values", ylab="r values", zlab="Likelihood")
+# dev.off() perspplot
+# 
+# #read file
+# img <- readJPEG("contourplot.jpg",native = TRUE)
+# if(exists("rasterImage")){
+#       cont <- plot(1:2, type='n',axes = F,xlab = "",ylab = "",main = "Negative Binomial likelihood surface")
+#       rasterImage(img,1,1,2,2)
+# }
+# 
+# img <- readJPEG("perspplot.jpg",native = TRUE)
+# if(exists("rasterImage")){
+#       persp <- plot(1:2, type='n',axes = F,xlab = "",ylab = "",main = "Negative Binomial likelihood surface")
+#       rasterImage(img,1,1,2,2)
+# }
 
 
-#read file
-img <- readJPEG("rplot.jpg",native = TRUE)
-if(exists("rasterImage")){
-      plot(1:2, type='n',axes = F,xlab = "",ylab = "",main = "Negative Binomial likelihood surface")
-      rasterImage(img,1,1,2,2)
-}
 ```
 
 ### Goodness of Fit
@@ -801,15 +835,15 @@ This means that we can form asymptotic confidence intervals for $m$ and $r$ know
 
 
 #according to my maths this would give us the fisher info (sent a picture via whatsapp)
-fisher_info_m <- function(r,m){
-  
-  info <- (n*r*m*(m+r)+sum(x)*r-n*m*r*(r+r*m))/(m^2*(r+m)^2)
-  return(info)
-}
+# fisher_info_m <- function(r,m){
+#   
+#   info <- (n*r*m*(m+r)+sum(x)*r-n*m*r*(r+r*m))/(m^2*(r+m)^2)
+#   return(info)
+# }
 
 
 
-se_m <- sqrt(fisher_info_m(r_estimate,m_estimate)^(-1))
+se_m <-  sqrt((-mle_negbinom$hessian)^(-1))
 
 wald_m <- c(0,0)
 wald_m[1] <- m_estimate-1.96*se_m
@@ -884,7 +918,9 @@ data_frame('Lower bound'= wilks_likelihood[1] , 'Upper bound' = wilks_likelihood
 
 The likelihood interval can be found as $R(\theta) > \gamma^p$, where $\gamma$ can be based on a $\chi^2$ approximation and $p$ is the dimension of $\theta$. Equivalently we can use the deviance: 
 
-$$ -2[\ell(\theta_p) - \ell(\hat{\theta_p})] \sim \chi^2_p. $$ We solve for points of $\theta$ where the deviance equals the 95th percentile of $\chi^2_p$. 
+$$ -2[\ell(\theta_p) - \ell(\hat{\theta_p})] \sim \chi^2_p. $$ We solve for points of $\theta$ where the deviance equals the 95th percentile of $\chi^2_p$.
+
+Otherwise, for the case when the loglikelihood is not quadratic, the gamma value simply represents the lower bound for $\ell{(\theta_p)}$ values such that they are at least gamma times as likely as the MLE estimates in $\ell{(\hat{\theta_p})}$.
 
 ```{r,  fig.height =4,fig.width=4.5}
 #likelihood ratio Graph
@@ -908,6 +944,7 @@ ggplot(df,aes(x = thetas,y = rthetas))+
   labs(x="m", y="Relative Likelihood")
   
 ```
+
 
 
 ```{r}
@@ -943,6 +980,11 @@ direct_interval_m <- c(lower_bound_direct_interval_m$root,upper_bound_direct_int
 data_frame('Lower bound'= direct_interval_m[1] , 'Upper bound' = direct_interval_m[2]) %>% knitr::kable(caption = " interval for m parameter")
 
 ```
+
+
+
+
+
 
 ```{r direct_r_interval}
 
@@ -990,8 +1032,11 @@ data_frame(Intervals = intervals, "Lower Bound" = lowerIntervals, "Upper Bound"=
 
 
 #Conclusion
+Conclude appropriatness of different methods for confidence intervals
 
--What are the next steps and how can we improve the models
+Gather more data so that regression models can be used. This may yield more accurate results than simply trying to fit a distribution to the data.
+
+If possible, try to identify the length of the roadway for each data point. The reason why the Poisson models do not perform as well might be because it cannot accurately determine the rate per distance unit.
 
 <!-- Make title of bibliography here: -->
 <!-- \newpage -->

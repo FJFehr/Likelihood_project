@@ -1,0 +1,25 @@
+"0","aics <- c(aic_poisson,aic_negbinom,aic_poismix,aic_zip)"
+"0","bics <- c(bic_poisson,bic_negbinom,bic_poismix,bic_zip)"
+"0","model <- c(""Poisson"",""Negative Binomial"",""Poisson Mixture"",""Zero Inflated Poisson"")"
+"0","data_frame(Model = model, AIC = aics,BIC = bics) %>% "
+"0","  knitr::kable(format = ""latex"", "
+"0","               caption = ""Models fitted to accident data"","
+"0","               booktabs = T) %>% "
+"0","  row_spec(2, bold = T)"
+"1","\begin{table}
+
+\caption{\label{tab:}Models fitted to accident data}
+\centering
+\begin{tabular}[t]{lrr}
+\toprule
+Model & AIC & BIC\\
+\midrule
+Poisson & 20263.64 & 20269.04\\
+\textbf{Negative Binomial} & \textbf{9626.92} & \textbf{9630.31}\\
+Poisson Mixture & 12075.12 & 12076.52\\
+Zero Inflated Poisson & 15556.16 & 15559.56\\
+\bottomrule
+\end{tabular}
+\end{table}"
+"1","
+"

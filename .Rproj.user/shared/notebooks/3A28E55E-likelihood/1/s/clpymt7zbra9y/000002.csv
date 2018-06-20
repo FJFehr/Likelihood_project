@@ -1,0 +1,8 @@
+"0","ggplot(data = dat, aes(sample =dat$Counts))+"
+"0","  geom_abline()+"
+"0","  stat_qq(distribution = stats::qnbinom,"
+"0","          dparams = list(r_estimate,mu = m_estimate),"
+"0","  col = ""turquoise4"", alpha=0.4)+"
+"0","  theme_classic() +"
+"0","  theme(plot.title = element_text(hjust=0.5))+"
+"0","  labs(title=""Q-Q plot for Negative Binomial"")"

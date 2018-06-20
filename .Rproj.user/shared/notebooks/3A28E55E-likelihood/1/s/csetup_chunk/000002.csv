@@ -3,6 +3,8 @@
 "0","# warning and message = FALSE implies ugly messages and warnings are removed from your pdf. These should be picked up when you execute the command chunks (code sections below) in your rmd, not printed in your paper!"
 "0","library(knitr)"
 "0","library(ggplot2)"
+"2","Need help? Try the ggplot2 mailing list: http://groups.google.com/group/ggplot2.
+"
 "0","library(kableExtra)"
 "0","library(tidyverse)"
 "2","[30m-- [1mAttaching packages[22m --------------------------------------- tidyverse 1.2.1 --[39m

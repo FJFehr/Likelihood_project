@@ -1,0 +1,13 @@
+"0","summarize(.data = dat, Mean= round(mean(Counts),4), Variance = round(var(Counts),4), Median = median(Counts)) %>% knitr::kable(caption = ""Summary statisitics"")"
+"1","
+
+"
+"1","|   Mean| Variance| Median|"
+"1","
+"
+"1","|------:|--------:|------:|"
+"1","
+"
+"1","| 6.9179|  85.0858|      4|"
+"1","
+"

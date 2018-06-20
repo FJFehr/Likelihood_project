@@ -1,0 +1,2 @@
+"0","#percentage outliers - 3rd quartile is 9"
+"0","perc_outlier <- round(length(dat$Counts[dat$Counts > 1.5*9])/length(dat$Counts),4)*100"
