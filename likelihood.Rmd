@@ -858,7 +858,13 @@ fnct <- function(m, max_m_loglikelihood, cutoff = qchisq(.95,1)) {
   # method = "L-BFGS-B"
   # )
   
-  f <- 2 * (max_m_loglikelihood - calc_negbinom_loglik_profile(m = m ,r =r_estimate)) - cutoff #this value should be zero for the constraints to be satisfied
+  
+  r <- m^2 /(var(x) - m )
+  
+  
+  
+  
+  f <- 2 * (max_m_loglikelihood - calc_negbinom_loglik_profile(m = m ,r = r)) - cutoff #this value should be zero for the constraints to be satisfied
   #replcae qchisq() with a random gamma cutoff if necesary
   
 }
@@ -918,7 +924,9 @@ fnct_direct <- function(m, max_m_loglikelihood, gamma = 0.15) {
   # method = "L-BFGS-B"
   # )
   
-  f <-  (max_m_loglikelihood - calc_negbinom_loglik_profile(m = m ,r =r_estimate)) +2*log(gamma) #this value should be zero for the constraints to be satisfied
+  r <- m^2 /(var(x) - m )
+  
+  f <-  (max_m_loglikelihood - calc_negbinom_loglik_profile(m = m ,r =r)) +1*log(gamma) #this value should be zero for the constraints to be satisfied
   #replcae qchisq() with a random gamma cutoff if necesary
   
 }
@@ -935,6 +943,32 @@ direct_interval_m <- c(lower_bound_direct_interval_m$root,upper_bound_direct_int
 data_frame('Lower bound'= direct_interval_m[1] , 'Upper bound' = direct_interval_m[2]) %>% knitr::kable(caption = " interval for m parameter")
 
 ```
+
+```{r direct_r_interval}
+
+fnct_direct_r <- function(r, max_m_loglikelihood, gamma = 0.15) {
+
+
+  m <- m_estimate #mle for M under r is just m_estimate
+  
+  f <-  (max_m_loglikelihood - calc_negbinom_loglik_profile(m = m ,r =r)) +1*log(gamma) #this value should be zero for the constraints to be satisfied
+  #replcae qchisq() with a random gamma cutoff if necesary
+  
+}
+
+#here is an example of how to do direct likelihood for M
+
+lower_bound_direct_interval_r <- uniroot(fnct_direct_r, c(0.1, r_estimate) , max_m_loglikelihood = max_m_loglikelihood)
+
+upper_bound_direct_interval_r <- uniroot(fnct_direct_r, c(r_estimate, 0.9) , max_m_loglikelihood = max_m_loglikelihood)
+
+direct_interval_r <- c(lower_bound_direct_interval_r$root,upper_bound_direct_interval_r$root)
+
+
+
+```
+
+
 
 #Results 
 

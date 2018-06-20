@@ -41,6 +41,7 @@ Attaching package: ‘MASS’
 "0","library(fitdistrplus)"
 "2","Loading required package: survival
 "
+"0","library(jpeg)# for pulling in our likelihood surface"
 "0","# "
 "0","# devtools::install_version(""rmarkdown"", version = ""1.8"", repos = ""http://cran.us.r-project.org"")"
 "0","dat <- read.csv(""data/accidents.csv"") %>% "
