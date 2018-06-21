@@ -100,7 +100,7 @@ This assignment is an explorative report on a dataset containing the number of a
 
 To better understand our data this report shall explore the following properties; Firstly we examine the type of data within the accidents dataset and discuss whether our data is discrete ordinal or continuous. After the symmetry of the data and bounds will be discussed. This leads the exploration to outliers and extreme values.
 
-```{r, fig.height = 4,fig.width=6}
+```{r fig.height = 4,fig.width=6}
 
 #first column is just an index, second is a  1632 observations
 
@@ -459,41 +459,55 @@ data_frame(Model = model, AIC = aics,BIC = bics) %>%
 ```
 
 
-The Negative Binomial has the lowest AIC and BIC value at `r round(aic_negbinom,2)` and `r round(bic_negbinom,2)` respectively. This implies that the Negative Binomial is the best fitting model when compared to the others. The goodness of fit will now be assessed further. We start by examining the likelihood surface. Since the $r$ shape parameter is a function of the $m$ parameter for each $m$ there is an exact $r$ meaning that these parameters are highly correlated. We can see from the contour plots below that the surface of the likelihood function peaks at the intersection of the MLE's of the parameters and dips off steeply at the zero values.
+The Negative Binomial has the lowest AIC and BIC value at `r round(aic_negbinom,2)` and `r round(bic_negbinom,2)` respectively. This implies that the Negative Binomial is the best fitting model when compared to the others. The goodness of fit will now be assessed further. We start by examining the likelihood surface. Since the $r$ shape parameter is a function of the $m$ parameter for each $m$ there is an exact $r$ meaning that these parameters are highly correlated.
 
-```{r NegBin Likelihood vis, fig.height = 4,fig.width=4.3}
+```{r NegBin Likelihood vis}
 #Here are some 3d plots from Birgits code - since r is a function of m it has no affect in the plots. But they still cool just take a soek to run
 
 
-# negbinom_loglik_plotting <- function(par){
-#   m <- par[1]
-#   r <- par[2]
-# 
-#   loglik <- -n*log(gamma(r)) + sum(log(gamma(r+x))) - sum(log(factorial(x))) + sum(x) * log(m/(m+r)) + n*r*log(r/(r+m))
-# 
-#   return(loglik)
-# 
-# }
-# 
-# #m range for plotting
-# m_range_ll <- seq(1,20, length.out = 100)
-# #r range for plotting
-# r_range_ll <- seq(0.01,1,length.out = 100)
-# 
-# #every combination - kinda like a kronecker product
-# pp <- expand.grid(x = m_range_ll, y = r_range_ll)
-# 
-# #loglike z range for plotting
-# z_range_ll <- numeric(length(pp$x))
-# 
-# for(i in 1:length(pp$x)){
-#    z_range_ll[i] <- negbinom_loglik_plotting(pp[i,])
-#  }
-# 
-# z_range_ll <- unlist(z_range_ll)
-# 
-# Z <- matrix(z_range_ll,nrow=100)
-# 
+negbinom_loglik_plotting <- function(par){
+  m <- par[1]
+  r <- par[2]
+
+  loglik <- -n*log(gamma(r)) + sum(log(gamma(r+x))) - sum(log(factorial(x))) + sum(x) * log(m/(m+r)) + n*r*log(r/(r+m))
+
+  return(loglik)
+
+}
+
+#m range for plotting
+m_range_ll <- seq(1,20, length.out = 100)
+#r range for plotting
+r_range_ll <- seq(0.01,1,length.out = 100)
+
+#every combination - kinda like a kronecker product
+pp <- expand.grid(x = m_range_ll, y = r_range_ll)
+
+#loglike z range for plotting
+z_range_ll <- numeric(length(pp$x))
+
+for(i in 1:length(pp$x)){
+   z_range_ll[i] <- negbinom_loglik_plotting(pp[i,])
+ }
+
+z_range_ll <- unlist(z_range_ll)
+
+Z <- matrix(z_range_ll,nrow=100)
+
+#Generate 3 dimensional plots
+
+cont_plot <- contour(m_range_ll, r_range_ll, Z, add = F, nlevels = 30,
+       xlab="m values", ylab="r values", zlab="Likelihood")
+
+persp_plot <- persp(m_range_ll,r_range_ll, Z, theta=-50, phi=15,
+         col="lightblue",expand = 0.5,shade = 0.2,
+         xlab="m values", ylab="r values", zlab="Likelihood")
+
+#This just prints out values, plots are drawn when the above variables are created
+#cont_plot
+#persp_plot
+
+
 # #Saves plot
 # jpeg('contourplot.jpg')
 #   contour(m_range_ll, r_range_ll, Z, add = F, nlevels = 30,
@@ -504,26 +518,23 @@ The Negative Binomial has the lowest AIC and BIC value at `r round(aic_negbinom,
 #   persp(m_range_ll,r_range_ll, Z, theta=-50, phi=15,
 #          col="lightblue",expand = 0.5,shade = 0.2,
 #          xlab="m values", ylab="r values", zlab="Likelihood")
-# dev.off()
+# dev.off() perspplot
+# 
+# #read file
+# img <- readJPEG("contourplot.jpg",native = TRUE)
+# if(exists("rasterImage")){
+#       cont <- plot(1:2, type='n',axes = F,xlab = "",ylab = "",main = "Negative Binomial likelihood surface")
+#       rasterImage(img,1,1,2,2)
+# }
+# 
+# img <- readJPEG("perspplot.jpg",native = TRUE)
+# if(exists("rasterImage")){
+#       persp <- plot(1:2, type='n',axes = F,xlab = "",ylab = "",main = "Negative Binomial likelihood surface")
+#       rasterImage(img,1,1,2,2)
+# }
 
-#read file
-img <- readJPEG("contourplot.jpg",native = TRUE)
-if(exists("rasterImage")){
-      cont <- plot(1:2, type='n',axes = F,xlab = "",ylab = "",main = "Negative Binomial likelihood surface")
-      rasterImage(img,1,1,2,2)
-}
 
 ```
-
-```{r,fig.height = 4,fig.width=4.3}
-
-img <- readJPEG("perspplot.jpg",native = TRUE)
-if(exists("rasterImage")){
-      persp <- plot(1:2, type='n',axes = F,xlab = "",ylab = "",main = "Negative Binomial likelihood surface")
-      rasterImage(img,1,1,2,2)
-}
-```
-
 
 ### Goodness of Fit
 
@@ -581,6 +592,11 @@ ggplot(comparison_df, aes(x = accident_count , y = Frequency , fill = Type )) +
   theme(plot.title = element_text(hjust=0.5))
 
 
+#qq plot
+
+
+
+
 #check if any of this is right
 
 fit_nbinom <- fitdist(data = x , method = "mle","nbinom")
@@ -620,19 +636,20 @@ ggplot(data = dat, aes(sample =dat$Counts))+
 
 The plot is in agreement with the prior too goodness of fit evaluations thus it is reasonable to assume that our data follows a Negative Binomial distribution. We will now explore the parameters of our distribution.
 
-\newpage 
-
 ##Profile Likelihood & Confidence Intervals
 
 The profile likelihood is a techinque used to estimate the likelihood function of a single parameter when multiple parameters are estimated simultaenously. The profile likelihoods for the m and r parameters are calculated as follows:
 
-```{r profile_likelihood_m, fig.width= 6 , fig.height= 3}
+\begin{align*}
+\end{align*}
+
+```{r profile_likelihood_m, fig.width= 6 , fig.height= 4}
 
 
 #need to calulcate mle at EACH point
 
-m_range <- seq(6,8, length.out = 100) #values of m for profile m loglikelihood
-r_range <- seq(0.5,0.7 , length.out = 100)
+m_range <- seq(1,56, by = 0.1) #values of m for profile m loglikelihood
+r_range <- seq(0.01,0.8 , by = 0.01)
 
 
 calc_negbinom_loglik_profile <- function(r,m){
@@ -707,39 +724,7 @@ data_frame(x = m_range, val = m_profile_loglik_values) %>%
 ```
 
 
-It can be seen that the profile likelihood for the $m$ parameter is somewhat quadratic around the MLE. Since the score function can be solved for analytically we can plot the score function and examine it for linearity.
-
-```{r, fig.height = 3,fig.width=5}
-#I have calculated the score of M
-
-score_U <- function(m){
-  r <- m^2 /(var(x)-m)
-  u <- (sum(x)*r-n*m*r)/(m*(r+m))
-  return (u)
-}
-
-thetas <- seq(0.001,20,by = 0.1)
-score <- 0
-for(i in 1:length(thetas)){
-  score[i] <- score_U(thetas[i])
-}
-df <- as.data.frame(thetas,score)
-
-ggplot(df,aes(x = thetas,y = score))+
-  geom_line()+
-  geom_hline(yintercept = 0)+
-  geom_vline(xintercept = 6.9, col = "red", lty = "dashed")+
-  theme(plot.title = element_text(hjust=0.5))+
-  labs(title="Negative Binomial Score \n m parameter") +
-  labs(x="m", y="U(m)")
-  
-
-```
-
-
-As we can see, our score function for $m$ is linear meaning that our likelihood must be quadratic, further implying that the asymptotic intervals relying on quadracity could be used.
-
-```{r profile_likelihood_r, fig.width= 6, fig.height= 3}
+```{r profile_likelihood_r, fig.width= 6, fig.height= 4}
 
 
 #have to redfine function to allow for correct optimisation
@@ -784,14 +769,10 @@ estimated_m_values <- profile_likelihood_calc_shape() #all m values are the same
 
 
 r_profile_loglik_values <- numeric(length(r_range))
-r_profile_ratio <- numeric(length(r_range))
 
 for (i in seq_along(estimated_m_values)){
   
   r_profile_loglik_values[i] <- calc_negbinom_loglik_profile(m = estimated_m_values[i], r = r_range[i])
-  
-  #Going to try make relative likelihood ratio
-  r_profile_ratio[i] <- exp(r_profile_loglik_values[i] - calc_negbinom_loglik_profile(m = estimated_m_values[i], r = r_estimate))
   
   
 }
@@ -807,35 +788,60 @@ data_frame(x = r_range, val = r_profile_loglik_values) %>%
 
 
 
+```
+
+It can be seen that the profile likelihood for the $m$ parameter is somewhat quadratic around the MLE, but this is clearly not the case for the $r$ shape parameter. Therefore it would be inappropriate to use a Wilks Likelihood interval or Wald interval for the shape parameter. The direct likelihood interval should be used. However, the quadracity of the $m$ parameter profile likelihood can be further visualised through the score of the parameter. 
+
+```{r, fig.height = 4.5,fig.width=5.5}
+#I have calculated the score of M
+
+score_U <- function(m){
+  r <- m^2 /(var(x)-m)
+  u <- (sum(x)*r-n*m*r)/(m*(r+m))
+  return (u)
+}
+
+thetas <- seq(0.001,20,by = 0.1)
+score <- 0
+for(i in 1:length(thetas)){
+  score[i] <- score_U(thetas[i])
+}
+df <- as.data.frame(thetas,score)
+
+ggplot(df,aes(x = thetas,y = score))+
+  geom_line()+
+  geom_hline(yintercept = 0)+
+  geom_vline(xintercept = 6.9, col = "red", lty = "dashed")+
+  theme(plot.title = element_text(hjust=0.5))+
+  labs(title="Negative Binomial Score \n m parameter") +
+  labs(x="m", y="U(m)")
+  
 
 ```
 
-We are unable to solve for the score function for $r$ exactly, but from the profile likelihood around the MLE for the $r$ shape parameter, it is clearly not quadratic. Therefore it would be inappropriate to use a Wilks Likelihood interval or Wald interval for the shape parameter. The direct likelihood interval should be used. 
+As we can see, our score function for $m$ is linear meaning that our likelihood must be quadratic, further implying that the asymptotic intervals relying on quadracity could be used.
 
-Since our shape parameter is a function of our mean paramter, $\hat{r} = \dfrac{\hat{m}^2}{S^2 - \hat{m}}$ we can solve for our intervals by using the invariance property $(\theta_L,\theta_U)$ is a likelihood interval for $\theta$ such that $(g(\theta_L),g(\theta_U))$. This property does not hold for asymptotic intervals.
-
-### Wald Interval  \label{WaldyBoi}
+### Wald Interval
 
 We can attain an interval for out Maximum Likelihood Estimates if we assume they have asymptotic normal distribution. This means $n\to\infty$ the estimates will be approximately normal with the following parameters.
 
 \begin{align*}
-\hat{m} & \stackrel{.}{\sim} N(m,I(\hat{m})^{-1}) \\
-\hat{r} & \stackrel{.}{\sim} N(r,I(\hat{r})^{-1})
+\hat{m} & \stackrel{.}{\sim} N(m,I(\hat{m})^{-1})
 \end{align*}
 
-This means that we can form asymptotic confidence intervals for $m$ and $r$ know as a Wald interval. The advantages of this is it is simple to calculate provided you have a standard error estimate. The standard error can be calulated numerically by finding the square of the inverse of the Hessian matrix. Since the profile likelihood of the shape parameter r is not quadratic around the MLE, our estimate for the $r$ parameter is not realiable. The direct likelihood interval shall be used instead.
-
-Assuming the asymptotic approximation holds we can obtain the following 95% confidence intervals for our parameters, meaning as we sampled infinity from our data we would expect to see our true parameter within 95% of our intervals obtained.
+This means that we can form asymptotic confidence intervals for $m$ and $r$ know as a Wald interval. The advantages of this is it is simple to calculate provided you have a standard error estimate. Since the profile likelihood of the shape parameter r is not quadratic around the MLE, we shall avoid this type of interval and the Wilks Likelihood ratio interval. The direct likelihood interval shall be used instead.
 
 ```{r Wald Interval estimation}
 
 
 #according to my maths this would give us the fisher info (sent a picture via whatsapp)
 # fisher_info_m <- function(r,m){
-# 
+#   
 #   info <- (n*r*m*(m+r)+sum(x)*r-n*m*r*(r+r*m))/(m^2*(r+m)^2)
 #   return(info)
 # }
+
+
 
 se_m <-  sqrt((-mle_negbinom$hessian)^(-1))
 
@@ -843,26 +849,27 @@ wald_m <- c(0,0)
 wald_m[1] <- m_estimate-1.96*se_m
 wald_m[2] <- m_estimate+1.96*se_m
 
-#Assuming invariance property holds
-
-wald_r <- c(0,0)
-wald_r[1] <- wald_m[1]^2/(var(x)-wald_m[1])
-wald_r[2] <- wald_m[2]^2/(var(x)-wald_m[2])
 
 
-data_frame('Parameter' = c("m","r"),'Lower bound'= c(wald_m[1],wald_r[1]), 'Upper bound' = c(wald_m[2],wald_r[2])) %>% knitr::kable(caption = "Wald intervals")
+# Here is an example to get a SE from the hessian but im unsure how since our LL has one parameter...
+
+# fit<-optim(pars,li_func,control=list("fnscale"=-1),hessian=TRUE,...)
+# fisher_info<-solve(-fit$hessian)
+# prop_sigma<-sqrt(diag(fisher_info))
+# prop_sigma<-diag(prop_sigma)
+# upper<-fit$par+1.96*prop_sigma
+# lower<-fit$par-1.96*prop_sigma
+# interval<-data.frame(value=fit$par, upper=upper, lower=lower)
+
+data_frame('Lower bound'= wald_m[1] , 'Upper bound' = wald_m[2]) %>% knitr::kable(caption = "Wald interval for m parameter")
 
 ```
 
-
-
 ### Wilks Likelihood ratio 
 
-The Wilks Likelihood Ratio statistic is based on the deviance and is used to compare a certain parameter against the Maximum Likelihood estimate for that parameter. If the data come from a Normal distribution the following result is exactly true, but if the likelihood is quadratic the following is asymptotically true.
+The Wilks Likelihood Ratio statistic is based on the deviance and is used to compare a certain parameter against the Maximum Likelihood estimate for that parameter. If the data come from a Normal distribution the following result is true, but if the likelihood is quadratic the following is asymptotically true.
 
 $$W = -2\text{log}R(\theta) \sim \chi^2_p$$
-
-Our interval for the $m$ parameter is reliable as we know the profile log-likelihood is quadratic and thus asymptotic theory should hold. On the other hand our interval for $r$ is not reliable as our profile likelihood is not quadratic and thus asymptotically not necessarily normally distributed.
 
 ```{r wilks_ratio_interval}
 
@@ -889,6 +896,8 @@ fnct <- function(m, max_m_loglikelihood, cutoff = qchisq(.95,1)) {
   r <- m^2 /(var(x) - m )
   
   
+  
+  
   f <- 2 * (max_m_loglikelihood - calc_negbinom_loglik_profile(m = m ,r = r)) - cutoff #this value should be zero for the constraints to be satisfied
   #replcae qchisq() with a random gamma cutoff if necesary
   
@@ -900,11 +909,7 @@ upper_bound_wilk_interval <- uniroot(fnct, c(m_estimate, 52) , max_m_loglikeliho
 
 wilks_likelihood <- c(lower_bound_wilk_interval$root,upper_bound_wilk_interval$root)
 
-wilks_r <- c(0,0)
-wilks_r[1] <- wilks_likelihood[1]^2/(var(x)-wilks_likelihood[1])
-wilks_r[2] <- wilks_likelihood[2]^2/(var(x)-wilks_likelihood[2])
-
-data_frame('Parameter' = c("m","r"),'Lower bound'= c(wilks_likelihood[1],wilks_r[1]), 'Upper bound' = c(wilks_likelihood[2],wilks_r[2])) %>% knitr::kable(caption = "Wilks Likelihood intervals")
+data_frame('Lower bound'= wilks_likelihood[1] , 'Upper bound' = wilks_likelihood[2]) %>% knitr::kable(caption = "Wilks Likelihood interval for m parameter")
 
 ```
 
@@ -915,9 +920,9 @@ The likelihood interval can be found as $R(\theta) > \gamma^p$, where $\gamma$ c
 
 $$ -2[\ell(\theta_p) - \ell(\hat{\theta_p})] \sim \chi^2_p. $$ We solve for points of $\theta$ where the deviance equals the 95th percentile of $\chi^2_p$.
 
-Otherwise, for the case when the loglikelihood is not quadratic, the $\gamma$ value simply represents the lower bound for $\ell{(\theta_p)}$ values such that they are at least$\gamma$ times as likely as the MLE estimates in $\ell{(\hat{\theta_p})}$.
+Otherwise, for the case when the loglikelihood is not quadratic, the gamma value simply represents the lower bound for $\ell{(\theta_p)}$ values such that they are at least gamma times as likely as the MLE estimates in $\ell{(\hat{\theta_p})}$.
 
-```{r,  fig.height =4,fig.width=5}
+```{r,  fig.height =4,fig.width=4.5}
 #likelihood ratio Graph
 
 r_theta <- function(m){
@@ -925,7 +930,7 @@ r_theta <- function(m){
   return(diff)
 }
 rthetas <- 0
-thetas <- seq(6,7.5,by = 0.1)
+thetas <- seq(5,10,by = 0.1)
 for(i in 1:length(thetas)){
   rthetas[i] <- r_theta(thetas[i])
 }
@@ -936,9 +941,10 @@ ggplot(df,aes(x = thetas,y = rthetas))+
   geom_hline(yintercept = 0.15, col = "red", lty = "dashed")+
   theme(plot.title = element_text(hjust=0.5))+
   labs(title="Relative Likelihood for Negative Binomial") +
-  labs(x="m location parameter", y="Relative Likelihood")
+  labs(x="m", y="Relative Likelihood")
   
 ```
+
 
 
 ```{r}
@@ -976,20 +982,8 @@ data_frame('Lower bound'= direct_interval_m[1] , 'Upper bound' = direct_interval
 ```
 
 
-As we can see the from the likelihood interval for $m$, all values within the interval [`r round(direct_interval_m[1],4)`,`r round(direct_interval_m[2],4)`] is at least 15% as likely as $\hat{m}$ = `r m_estimate`. Since this interval is not based on any underlying probability distribution of $\hat{m}$ thus it does not have any confidence level attached to it.
 
-```{r,  fig.height =4,fig.width=5}
-#likelihood ratio Graph for r
 
-data_frame(x = r_range, val = r_profile_ratio) %>% 
-    ggplot(aes(x=x,y=val))+
-    geom_line()+
-    geom_hline(yintercept = 0.15, col = "red", lty = "dashed")+
-    theme(plot.title = element_text(hjust=0.5))+
-    labs(title="Relative Likelihood for Negative Binomial") +
-    labs(x="r shape parameter", y="Relative Likelihood")
-  
-```
 
 
 ```{r direct_r_interval}
@@ -1004,7 +998,7 @@ fnct_direct_r <- function(r, max_m_loglikelihood, gamma = 0.15) {
   
 }
 
-#here is an example of how to do direct likelihood for r
+#here is an example of how to do direct likelihood for M
 
 lower_bound_direct_interval_r <- uniroot(fnct_direct_r, c(0.1, r_estimate) , max_m_loglikelihood = max_m_loglikelihood)
 
@@ -1013,96 +1007,37 @@ upper_bound_direct_interval_r <- uniroot(fnct_direct_r, c(r_estimate, 0.9) , max
 direct_interval_r <- c(lower_bound_direct_interval_r$root,upper_bound_direct_interval_r$root)
 
 
-data_frame('Lower bound'= direct_interval_r[1] , 'Upper bound' = direct_interval_r[2]) %>% knitr::kable(caption = " interval for r parameter")
 
 ```
 
-The pure likelihood interval for $r$ requires no asymptotic assumptions or underlying probability distribution, it is entirely based on the data and thus will be our best estimate for the shape parameter. All values within the interval [`r round(direct_interval_r[1],4)`,`r round(direct_interval_r[2],4)`] is at least 15% as likely as $\hat{r}$ =`r r_estimate`.
 
 
 #Results 
 
-We now compare all the results attained from our intervals and compare them. The direct intervals have been displayed on a relatively likelihood plot of each parameter respectively. The other intervals shall be ommited from the visualisation due to high similarity and thus not easily visible.
-
-```{r,fig.height =4,fig.width=5}
-#relative likelihood with intervals for m
-
-intervals_plot_m <- ggplot(df,aes(x = thetas,y = rthetas))+
-  geom_line()+
-  geom_vline(xintercept = direct_interval_m[1], col = "blue", lty = "dotted")+
-  geom_vline(xintercept = direct_interval_m[2], col = "blue", lty = "dotted")+
-  theme(plot.title = element_text(hjust=0.5))+
-  labs(title="Direct Likelihood interval for m") +
-  labs(x="m", y="Relative Likelihood")
-
-intervals_plot_m
-#gridExtra::grid.arrange(intervals_plot_m, intervals_plot_r,ncol=2)
-
-```
 
 ```{r intervals}
 
-intervals_m <- c("Wald Interval", "Wilks Likelihood","Direct Likelihood 15%")
-lowerIntervals_m <- c(wald_m[1], wilks_likelihood[1], direct_interval_m[1])
-upperIntervals_m <- c(wald_m[1], wilks_likelihood[2], direct_interval_m[2])
 
-data_frame(Intervals = intervals_m, "Lower Bound" = lowerIntervals_m, "Upper Bound"= upperIntervals_m) %>% 
+intervals <- c("Wald Interval", "Wilks Likelihood","Direct Likelihood 15%")
+lowerIntervals <- c(wald_m[1], wilks_likelihood[1], direct_interval_m[1])
+upperIntervals <- c(wald_m[2], wilks_likelihood[2], direct_interval_m[2])
+
+data_frame(Intervals = intervals, "Lower Bound" = lowerIntervals, "Upper Bound"= upperIntervals) %>% 
   knitr::kable(format = "latex", 
                caption = "Intervals for m parameter",
                booktabs = T)
 
-# wald_m[1]-wald_m[2]
-# wilks_likelihood[1]-wilks_likelihood[2]
-# direct_interval_m[1]-direct_interval_m[2]
-#we can see that wald is largest interval than wilks than direct
-
 ```
 
-Our intervals for the $m$ parameter are very similar with the widest interval being the wald interval and narrowest being the pure likelihood interval. This means our asymptotic confidence interval for $m$ is [`r round(wald_m[1],4)`,`r round(wald_r[2],4)`] meaning that if more data was collected and each sample a confidence interval was collected, 95% of these intevals would contain our true parameter $m$. However, this does not give any cetainty on our particular interval actually containing the true parameter.
 
-The narrowest interval, marginally, is our direct likelihood interval [`r round(direct_interval_m[1],4)`,`r round(direct_interval_r[2],4)`] which is not based on any underlying probability distribution but only that the interval for $m$ is 15% as likely as the MLE. The two intervals are in agreement.
-
-```{r,fig.height =4,fig.width=5}
-#relative likelihood with intervals for r
-
-intervals_plot_r <- data_frame(x = r_range, val = r_profile_ratio) %>% 
-    ggplot(aes(x=x,y=val))+
-    geom_line()+
-    geom_vline(xintercept = direct_interval_r[1], col = "darkgreen", lty = "dotted")+
-    geom_vline(xintercept = direct_interval_r[2], col = "darkgreen", lty = "dotted")+
-    theme(plot.title = element_text(hjust=0.5))+
-    labs(title="Direct Likelihood interval for r") +
-    labs(x="r shape parameter", y="Relative Likelihood")
-intervals_plot_r
-```
- 
- 
-```{r}
-intervals_r <- c("Wald Interval", "Wilks Likelihood","Direct Likelihood 15%")
-lowerIntervals_r <- c(wald_r[1], wilks_r[1], direct_interval_r[1])
-upperIntervals_r <- c(wald_r[2], wilks_r[2], direct_interval_r[2])
-
-data_frame(Intervals = intervals_r, "Lower Bound" = lowerIntervals_r, "Upper Bound"= upperIntervals_r) %>% 
-  knitr::kable(format = "latex", 
-               caption = "Intervals for r parameter",
-               booktabs = T)
-
-# wald_r[1]-wald_r[2]
-# wilks_r[1]-wilks_r[2]
-# direct_interval_r[1]-direct_interval_r[2]
-#we can see that wald is narrowest interval than wilks than direct
-
-```
-
-Again we notice that the all intervals are very similar, but with marginal difference such that the wald interval is the narrowest and the largest is the direct likelihood interval. As discussed in \ref{WaldyBoi} the intervals for both Wilks Likelihood and Wald intervals are unreliable and we should rather use the direct likelihood interval as it makes no assumptions on the asymptotic distribution.
 
 #Conclusion
+Conclude appropriatness of different methods for confidence intervals
 
-From our results we can see that all intervals for $m$ are similar and the intervals for $r$ are also very similar. In both instances the pure likelihood interval is appropriate and often the most robust as it requires the least assumptions, but for $m$ we can use the asymptotic normality properties to gain a reliable confidence interval for our estimate.
+Gather more data so that regression models can be used. This may yield more accurate results than simply trying to fit a distribution to the data.
 
-To further improve these models one could gather more data such that regression models could be used. This may yield more accurate results than simply trying to fit a distribution to the data. One could also explore different combinations of mixure models such as negative binomial, negative binomial or zero inflated negative binomial. These could potentially fit our data better, but The AIC, goodness of fit and asymptotic normality should be considered.
-
-Another consideration regarding the data would be to identify the length of the roadway for each data point. The reason why the Poisson models do not perform as well, might be because it cannot accurately determine the rate per distance unit. 
+If possible, try to identify the length of the roadway for each data point. The reason why the Poisson models do not perform as well might be because it cannot accurately determine the rate per distance unit.
 
 <!-- Make title of bibliography here: -->
 <!-- \newpage -->
+# References  

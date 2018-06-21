@@ -413,7 +413,7 @@ Mean \(\hat{m}\) & Shape \(\hat{r}\) & AIC & BIC\tabularnewline
 \subsubsection{Mixture of 2 Poissons}\label{mixture-of-2-poissons}
 
 A finite mixture distributon of two Poisson variables will now be
-explored. A possibly reason for the overdispersion is that the data are
+explored. A possible reason for the overdispersion is that the data are
 from two separate Poisson distributions. Since it is not known from
 which distribution that any given data point is from, presuming that the
 two distribution mixture is appropriate, an additional mixing proportion
@@ -534,22 +534,13 @@ best fitting model when compared to the others. The goodness of fit will
 now be assessed further. We start by examining the likelihood surface.
 Since the \(r\) shape parameter is a function of the \(m\) parameter for
 each \(m\) there is an exact \(r\) meaning that these parameters are
-highly correlated.
+highly correlated. We can see from the contour plots below that the
+surface of the likelihood function peaks at the intersection of the
+MLE's of the parameters and dips off steeply at the zero values.
 
 \includegraphics{likelihood_files/figure-latex/NegBin Likelihood vis-1.pdf}
-\includegraphics{likelihood_files/figure-latex/NegBin Likelihood vis-2.pdf}
 
-\begin{verbatim}
-## NULL
-\end{verbatim}
-
-\begin{verbatim}
-##               [,1]         [,2]          [,3]          [,4]
-## [1,]  6.766185e-02 0.0208701991 -7.788864e-02  7.788864e-02
-## [2,] -1.547565e+00 0.3360922734 -1.254313e+00  1.254313e+00
-## [3,]  9.123207e-21 0.0001878758  5.034116e-05 -5.034116e-05
-## [4,]  7.107063e-02 4.6950465230  8.143787e-02  9.185621e-01
-\end{verbatim}
+\includegraphics{likelihood_files/figure-latex/unnamed-chunk-4-1.pdf}
 
 \subsubsection{Goodness of Fit}\label{goodness-of-fit}
 
@@ -598,6 +589,8 @@ thus it is reasonable to assume that our data follows a Negative
 Binomial distribution. We will now explore the parameters of our
 distribution.
 
+\newpage 
+
 \subsection{Profile Likelihood \& Confidence
 Intervals}\label{profile-likelihood-confidence-intervals}
 
@@ -606,28 +599,36 @@ function of a single parameter when multiple parameters are estimated
 simultaenously. The profile likelihoods for the m and r parameters are
 calculated as follows:
 
-\begin{align*}
-\end{align*}
-
 \includegraphics{likelihood_files/figure-latex/profile_likelihood_m-1.pdf}
 
-\includegraphics{likelihood_files/figure-latex/profile_likelihood_r-1.pdf}
-
 It can be seen that the profile likelihood for the \(m\) parameter is
-somewhat quadratic around the MLE, but this is clearly not the case for
-the \(r\) shape parameter. Therefore it would be inappropriate to use a
-Wilks Likelihood interval or Wald interval for the shape parameter. The
-direct likelihood interval should be used. However, the quadracity of
-the \(m\) parameter profile likelihood can be further visualised through
-the score of the parameter.
+somewhat quadratic around the MLE. Since the score function can be
+solved for analytically we can plot the score function and examine it
+for linearity.
 
-\includegraphics{likelihood_files/figure-latex/unnamed-chunk-5-1.pdf}
+\includegraphics{likelihood_files/figure-latex/unnamed-chunk-6-1.pdf}
 
 As we can see, our score function for \(m\) is linear meaning that our
 likelihood must be quadratic, further implying that the asymptotic
 intervals relying on quadracity could be used.
 
-\subsubsection{Wald Interval}\label{wald-interval}
+\includegraphics{likelihood_files/figure-latex/profile_likelihood_r-1.pdf}
+
+We are unable to solve for the score function for \(r\) exactly, but
+from the profile likelihood around the MLE for the \(r\) shape
+parameter, it is clearly not quadratic. Therefore it would be
+inappropriate to use a Wilks Likelihood interval or Wald interval for
+the shape parameter. The direct likelihood interval should be used.
+
+Since our shape parameter is a function of our mean paramter,
+\(\hat{r} = \dfrac{\hat{m}^2}{S^2 - \hat{m}}\) we can solve for our
+intervals by using the invariance property \((\theta_L,\theta_U)\) is a
+likelihood interval for \(\theta\) such that
+\((g(\theta_L),g(\theta_U))\). This property does not hold for
+asymptotic intervals.
+
+\subsubsection{\texorpdfstring{Wald Interval
+\label{WaldyBoi}}{Wald Interval }}\label{wald-interval}
 
 We can attain an interval for out Maximum Likelihood Estimates if we
 assume they have asymptotic normal distribution. This means
@@ -635,27 +636,36 @@ assume they have asymptotic normal distribution. This means
 following parameters.
 
 \begin{align*}
-\hat{m} & \stackrel{.}{\sim} N(m,I(\hat{m})^{-1})
+\hat{m} & \stackrel{.}{\sim} N(m,I(\hat{m})^{-1}) \\
+\hat{r} & \stackrel{.}{\sim} N(r,I(\hat{r})^{-1})
 \end{align*}
 
 This means that we can form asymptotic confidence intervals for \(m\)
 and \(r\) know as a Wald interval. The advantages of this is it is
-simple to calculate provided you have a standard error estimate. Since
-the profile likelihood of the shape parameter r is not quadratic around
-the MLE, we shall avoid this type of interval and the Wilks Likelihood
-ratio interval. The direct likelihood interval shall be used instead.
+simple to calculate provided you have a standard error estimate. The
+standard error can be calulated numerically by finding the square of the
+inverse of the Hessian matrix. Since the profile likelihood of the shape
+parameter r is not quadratic around the MLE, our estimate for the \(r\)
+parameter is not realiable. The direct likelihood interval shall be used
+instead.
 
-\begin{longtable}[]{@{}rr@{}}
-\caption{Wald interval for m parameter}\tabularnewline
+Assuming the asymptotic approximation holds we can obtain the following
+95\% confidence intervals for our parameters, meaning as we sampled
+infinity from our data we would expect to see our true parameter within
+95\% of our intervals obtained.
+
+\begin{longtable}[]{@{}lrr@{}}
+\caption{Wald intervals}\tabularnewline
 \toprule
-Lower bound & Upper bound\tabularnewline
+Parameter & Lower bound & Upper bound\tabularnewline
 \midrule
 \endfirsthead
 \toprule
-Lower bound & Upper bound\tabularnewline
+Parameter & Lower bound & Upper bound\tabularnewline
 \midrule
 \endhead
-6.584562 & 7.037038\tabularnewline
+m & 6.5845624 & 7.0370376\tabularnewline
+r & 0.5523027 & 0.6344736\tabularnewline
 \bottomrule
 \end{longtable}
 
@@ -664,22 +674,29 @@ Lower bound & Upper bound\tabularnewline
 The Wilks Likelihood Ratio statistic is based on the deviance and is
 used to compare a certain parameter against the Maximum Likelihood
 estimate for that parameter. If the data come from a Normal distribution
-the following result is true, but if the likelihood is quadratic the
-following is asymptotically true.
+the following result is exactly true, but if the likelihood is quadratic
+the following is asymptotically true.
 
 \[W = -2\text{log}R(\theta) \sim \chi^2_p\]
 
-\begin{longtable}[]{@{}rr@{}}
-\caption{Wilks Likelihood interval for m parameter}\tabularnewline
+Our interval for the \(m\) parameter is reliable as we know the profile
+log-likelihood is quadratic and thus asymptotic theory should hold. On
+the other hand our interval for \(r\) is not reliable as our profile
+likelihood is not quadratic and thus asymptotically not necessarily
+normally distributed.
+
+\begin{longtable}[]{@{}lrr@{}}
+\caption{Wilks Likelihood intervals}\tabularnewline
 \toprule
-Lower bound & Upper bound\tabularnewline
+Parameter & Lower bound & Upper bound\tabularnewline
 \midrule
 \endfirsthead
 \toprule
-Lower bound & Upper bound\tabularnewline
+Parameter & Lower bound & Upper bound\tabularnewline
 \midrule
 \endhead
-6.586151 & 7.038553\tabularnewline
+m & 6.5861512 & 7.0385532\tabularnewline
+r & 0.5525804 & 0.6347592\tabularnewline
 \bottomrule
 \end{longtable}
 
@@ -693,7 +710,12 @@ dimension of \(\theta\). Equivalently we can use the deviance:
 for points of \(\theta\) where the deviance equals the 95th percentile
 of \(\chi^2_p\).
 
-\includegraphics{likelihood_files/figure-latex/unnamed-chunk-6-1.pdf}
+Otherwise, for the case when the loglikelihood is not quadratic, the
+\(\gamma\) value simply represents the lower bound for
+\(\ell{(\theta_p)}\) values such that they are at least\(\gamma\) times
+as likely as the MLE estimates in \(\ell{(\hat{\theta_p})}\).
+
+\includegraphics{likelihood_files/figure-latex/unnamed-chunk-7-1.pdf}
 
 \begin{longtable}[]{@{}rr@{}}
 \caption{interval for m parameter}\tabularnewline
@@ -709,7 +731,43 @@ Lower bound & Upper bound\tabularnewline
 \bottomrule
 \end{longtable}
 
+As we can see the from the likelihood interval for \(m\), all values
+within the interval {[}6.5875,7.0371{]} is at least 15\% as likely as
+\(\hat{m}\) = 6.8108. Since this interval is not based on any underlying
+probability distribution of \(\hat{m}\) thus it does not have any
+confidence level attached to it.
+
+\includegraphics{likelihood_files/figure-latex/unnamed-chunk-9-1.pdf}
+
+\begin{longtable}[]{@{}rr@{}}
+\caption{interval for r parameter}\tabularnewline
+\toprule
+Lower bound & Upper bound\tabularnewline
+\midrule
+\endfirsthead
+\toprule
+Lower bound & Upper bound\tabularnewline
+\midrule
+\endhead
+0.5407778 & 0.6348027\tabularnewline
+\bottomrule
+\end{longtable}
+
+The pure likelihood interval for \(r\) requires no asymptotic
+assumptions or underlying probability distribution, it is entirely based
+on the data and thus will be our best estimate for the shape parameter.
+All values within the interval {[}0.5408,0.6348{]} is at least 15\% as
+likely as \(\hat{r}\) =0.5926.
+
 \section{Results}\label{results}
+
+We now compare all the results attained from our intervals and compare
+them. The direct intervals have been displayed on a relatively
+likelihood plot of each parameter respectively. The other intervals
+shall be ommited from the visualisation due to high similarity and thus
+not easily visible.
+
+\includegraphics{likelihood_files/figure-latex/unnamed-chunk-10-1.pdf}
 
 \begin{table}
 
@@ -719,18 +777,72 @@ Lower bound & Upper bound\tabularnewline
 \toprule
 Intervals & Lower Bound & Upper Bound\\
 \midrule
-Wald Interval & 6.584562 & 7.037038\\
+Wald Interval & 6.584562 & 6.584562\\
 Wilks Likelihood & 6.586151 & 7.038553\\
 Direct Likelihood 15\% & 6.587527 & 7.037140\\
 \bottomrule
 \end{tabular}
 \end{table}
 
+Our intervals for the \(m\) parameter are very similar with the widest
+interval being the wald interval and narrowest being the pure likelihood
+interval. This means our asymptotic confidence interval for \(m\) is
+{[}6.5846,0.6345{]} meaning that if more data was collected and each
+sample a confidence interval was collected, 95\% of these intevals would
+contain our true parameter \(m\). However, this does not give any
+cetainty on our particular interval actually containing the true
+parameter.
+
+The narrowest interval, marginally, is our direct likelihood interval
+{[}6.5875,0.6348{]} which is not based on any underlying probability
+distribution but only that the interval for \(m\) is 15\% as likely as
+the MLE. The two intervals are in agreement.
+
+\includegraphics{likelihood_files/figure-latex/unnamed-chunk-11-1.pdf}
+
+\begin{table}
+
+\caption{\label{tab:unnamed-chunk-12}Intervals for r parameter}
+\centering
+\begin{tabular}[t]{lrr}
+\toprule
+Intervals & Lower Bound & Upper Bound\\
+\midrule
+Wald Interval & 0.5523027 & 0.6344736\\
+Wilks Likelihood & 0.5525804 & 0.6347592\\
+Direct Likelihood 15\% & 0.5407778 & 0.6348027\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Again we notice that the all intervals are very similar, but with
+marginal difference such that the wald interval is the narrowest and the
+largest is the direct likelihood interval. As discussed in
+\ref{WaldyBoi} the intervals for both Wilks Likelihood and Wald
+intervals are unreliable and we should rather use the direct likelihood
+interval as it makes no assumptions on the asymptotic distribution.
+
 \section{Conclusion}\label{conclusion}
 
--What are the next steps and how can we improve the models
+From our results we can see that all intervals for \(m\) are similar and
+the intervals for \(r\) are also very similar. In both instances the
+pure likelihood interval is appropriate and often the most robust as it
+requires the least assumptions, but for \(m\) we can use the asymptotic
+normality properties to gain a reliable confidence interval for our
+estimate.
 
-\section{References}\label{references}
+To further improve these models one could gather more data such that
+regression models could be used. This may yield more accurate results
+than simply trying to fit a distribution to the data. One could also
+explore different combinations of mixure models such as negative
+binomial, negative binomial or zero inflated negative binomial. These
+could potentially fit our data better, but The AIC, goodness of fit and
+asymptotic normality should be considered.
+
+Another consideration regarding the data would be to identify the length
+of the roadway for each data point. The reason why the Poisson models do
+not perform as well, might be because it cannot accurately determine the
+rate per distance unit.
 
 % Force include bibliography in my chosen format:
 \newpage
