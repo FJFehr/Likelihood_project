@@ -643,11 +643,8 @@ following parameters.
 This means that we can form asymptotic confidence intervals for \(m\)
 and \(r\) know as a Wald interval. The advantages of this is it is
 simple to calculate provided you have a standard error estimate. The
-standard error can be calulated numerically by finding the square of the
-inverse of the Hessian matrix. Since the profile likelihood of the shape
-parameter r is not quadratic around the MLE, our estimate for the \(r\)
-parameter is not realiable. The direct likelihood interval shall be used
-instead.
+standard error can be calulated numerically by finding the square root
+of the inverse of the Hessian matrix.
 
 Assuming the asymptotic approximation holds we can obtain the following
 95\% confidence intervals for our parameters, meaning as we sampled
@@ -665,7 +662,7 @@ Parameter & Lower bound & Upper bound\tabularnewline
 \midrule
 \endhead
 m & 6.5845624 & 7.0370376\tabularnewline
-r & 0.5523027 & 0.6344736\tabularnewline
+r & 0.5643434 & 0.6208566\tabularnewline
 \bottomrule
 \end{longtable}
 
@@ -679,12 +676,6 @@ the following is asymptotically true.
 
 \[W = -2\text{log}R(\theta) \sim \chi^2_p\]
 
-Our interval for the \(m\) parameter is reliable as we know the profile
-log-likelihood is quadratic and thus asymptotic theory should hold. On
-the other hand our interval for \(r\) is not reliable as our profile
-likelihood is not quadratic and thus asymptotically not necessarily
-normally distributed.
-
 \begin{longtable}[]{@{}lrr@{}}
 \caption{Wilks Likelihood intervals}\tabularnewline
 \toprule
@@ -696,7 +687,7 @@ Parameter & Lower bound & Upper bound\tabularnewline
 \midrule
 \endhead
 m & 6.5861512 & 7.0385532\tabularnewline
-r & 0.5525804 & 0.6347592\tabularnewline
+r & 0.5405427 & 0.6350722\tabularnewline
 \bottomrule
 \end{longtable}
 
@@ -787,7 +778,7 @@ Direct Likelihood 15\% & 6.587527 & 7.037140\\
 Our intervals for the \(m\) parameter are very similar with the widest
 interval being the wald interval and narrowest being the pure likelihood
 interval. This means our asymptotic confidence interval for \(m\) is
-{[}6.5846,0.6345{]} meaning that if more data was collected and each
+{[}6.5846,0.6209{]} meaning that if more data was collected and each
 sample a confidence interval was collected, 95\% of these intevals would
 contain our true parameter \(m\). However, this does not give any
 cetainty on our particular interval actually containing the true
@@ -808,28 +799,24 @@ the MLE. The two intervals are in agreement.
 \toprule
 Intervals & Lower Bound & Upper Bound\\
 \midrule
-Wald Interval & 0.5523027 & 0.6344736\\
-Wilks Likelihood & 0.5525804 & 0.6347592\\
+Wald Interval & 0.5643434 & 0.6208566\\
+Wilks Likelihood & 0.5405427 & 0.6350722\\
 Direct Likelihood 15\% & 0.5407778 & 0.6348027\\
 \bottomrule
 \end{tabular}
 \end{table}
 
 Again we notice that the all intervals are very similar, but with
-marginal difference such that the wald interval is the narrowest and the
-largest is the direct likelihood interval. As discussed in
-\ref{WaldyBoi} the intervals for both Wilks Likelihood and Wald
-intervals are unreliable and we should rather use the direct likelihood
-interval as it makes no assumptions on the asymptotic distribution.
+marginal difference such that the Wald interval is the narrowest and the
+largest is the direct likelihood interval.
 
 \section{Conclusion}\label{conclusion}
 
 From our results we can see that all intervals for \(m\) are similar and
 the intervals for \(r\) are also very similar. In both instances the
 pure likelihood interval is appropriate and often the most robust as it
-requires the least assumptions, but for \(m\) we can use the asymptotic
-normality properties to gain a reliable confidence interval for our
-estimate.
+requires the least assumptions, but since our parameters are quadratic
+around the MLEs, asymptotic intervals give good approximations.
 
 To further improve these models one could gather more data such that
 regression models could be used. This may yield more accurate results

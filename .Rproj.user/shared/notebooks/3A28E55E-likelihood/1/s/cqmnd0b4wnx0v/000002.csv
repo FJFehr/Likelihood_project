@@ -1,0 +1,5 @@
+"0","img <- readJPEG(""perspplot.jpg"",native = TRUE)"
+"0","if(exists(""rasterImage"")){"
+"0","      persp <- plot(1:2, type='n',axes = F,xlab = """",ylab = """",main = ""Negative Binomial likelihood surface"")"
+"0","      rasterImage(img,1,1,2,2)"
+"0","}"
